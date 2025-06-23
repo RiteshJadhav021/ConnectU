@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -9,6 +10,7 @@ const Navbar = () => {
   const logoRef = useRef(null);
   const loginRef = useRef(null);
   const signupRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -73,8 +75,13 @@ const Navbar = () => {
     <nav ref={navRef} className={`w-full flex items-center justify-between px-6 py-4 shadow-lg fixed top-0 left-0 z-50 transition-all duration-300 ${menuOpen ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500' : 'bg-gradient-to-r from-cyan-700 via-blue-800 to-indigo-900'}`}>
       {/* Logo */}
       <div className="flex items-center">
-        <span ref={logoRef} className="text-2xl md:text-3xl font-extrabold tracking-tight text-white drop-shadow-lg select-none flex items-center">
-          <span className="flex items-center bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 text-cyan-900 px-3 py-1 rounded-xl mr-2 shadow-md font-black italic transform -skew-x-6 border-2 border-white transition-all duration-200 hover:scale-110 cursor-pointer">
+        <span
+          ref={logoRef}
+          className="text-2xl md:text-3xl font-extrabold tracking-tight text-white drop-shadow-lg select-none flex items-center"
+          style={{ cursor: 'pointer' }}
+          onClick={() => navigate('/')}
+        >
+          <span className="flex items-center bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 text-cyan-900 px-3 py-1 rounded-xl mr-2 shadow-md font-black italic transform -skew-x-6 border-2 border-white transition-all duration-200 hover:scale-110">
             <svg className="w-7 h-7 mr-1 text-cyan-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" />
               <path d="M8 15l4-4 4 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -98,8 +105,8 @@ const Navbar = () => {
 
       {/* Desktop Buttons */}
       <div className="hidden md:flex items-center space-x-4">
-        <button ref={loginRef} className="px-6 py-2 rounded-full bg-white text-cyan-800 font-bold shadow-lg border-2 border-cyan-800 hover:bg-cyan-800 hover:text-white hover:scale-110 hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400">Login</button>
-        <button ref={signupRef} className="px-6 py-2 rounded-full bg-yellow-400 text-cyan-900 font-bold shadow-lg border-2 border-yellow-500 hover:bg-yellow-500 hover:text-white hover:scale-110 hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300">Sign Up</button>
+        <button ref={loginRef} onClick={() => navigate('/login')} className="px-6 py-2 rounded-full bg-white text-cyan-800 font-bold shadow-lg border-2 border-cyan-800 hover:bg-cyan-800 hover:text-white hover:scale-110 hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400">Login</button>
+        <button ref={signupRef} onClick={() => navigate('/signup')} className="px-6 py-2 rounded-full bg-yellow-400 text-cyan-900 font-bold shadow-lg border-2 border-yellow-500 hover:bg-yellow-500 hover:text-white hover:scale-110 hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300">Sign Up</button>
       </div>
 
       {/* Fullscreen Mobile Menu */}
@@ -111,8 +118,8 @@ const Navbar = () => {
           <span style={{ textShadow: '0 2px 12px #0008' }}>×</span>
         </button>
         <div className="flex flex-col items-center justify-center  w-full gap-8 mt-10">
-          <button className="w-4/5 py-3 rounded-2xl bg-white bg-opacity-80 text-cyan-900 text-lg font-bold shadow-xl border-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-300">Login</button>
-          <button className="w-4/5 py-3 rounded-2xl bg-yellow-400 text-cyan-900 text-lg font-bold shadow-xl border-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200">Sign Up</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-4/5 py-3 rounded-2xl bg-white bg-opacity-80 text-cyan-900 text-lg font-bold shadow-xl border-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-300">Login</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/signup'); }} className="w-4/5 py-3 rounded-2xl bg-yellow-400 text-cyan-900 text-lg font-bold shadow-xl border-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-200">Sign Up</button>
         </div>
       </div>
 

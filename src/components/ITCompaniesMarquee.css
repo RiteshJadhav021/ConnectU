@@ -1,0 +1,117 @@
+.it-marquee-container {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: #f8f9fa;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 32px 0 0 0;
+}
+
+.it-marquee {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  animation: marquee 18s linear infinite;
+  gap: 48px;
+}
+
+.it-logo {
+  height: 60px;
+  margin: 0 16px;
+  filter: grayscale(0.2) drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+  transition: filter 0.2s;
+}
+
+.it-logo:hover {
+  filter: grayscale(0) drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.it-marquee-alumni-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 28px;
+  padding: 32px 0 32px 0;
+  margin-right: 32px;
+}
+
+.alumni-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 20px 32px;
+  min-width: 380px;
+  max-width: 420px;
+  margin-bottom: 8px;
+  transition: box-shadow 0.2s;
+  border: 1px solid #f0f0f0;
+}
+.alumni-card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+}
+.alumni-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 22px;
+  border: 2px solid #e0e0e0;
+}
+.alumni-info {
+  flex: 1;
+}
+.alumni-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.alumni-name {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #222;
+}
+.alumni-rating {
+  color: #1dbf73;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-left: 2px;
+}
+.alumni-verified {
+  color: #3b82f6;
+  font-size: 1.1rem;
+  margin-left: 2px;
+}
+.alumni-title {
+  color: #555;
+  font-size: 0.98rem;
+  margin-bottom: 7px;
+}
+.alumni-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.alumni-tag {
+  background: #f3f4f6;
+  color: #444;
+  font-size: 0.92rem;
+  border-radius: 12px;
+  padding: 3px 13px;
+  font-weight: 500;
+  margin-top: 2px;
+}
