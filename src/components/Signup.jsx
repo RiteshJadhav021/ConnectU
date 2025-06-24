@@ -19,6 +19,10 @@ const Signup = () => {
   });
   const [nameError, setNameError] = useState("");
   const [prnError, setPrnError] = useState("");
+  const [passoutError, setPassoutError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [roleError, setRoleError] = useState("");
 
   const handleChange = (e) => {
     if (e.target.name === "name") {
@@ -47,9 +51,119 @@ const Signup = () => {
     setForm({ name: "", prn: "", passout: "", email: "", password: "" });
   };
 
-  const handleSubmit = (e) => {
+  const validate = () => {
+    let valid = true;
+    // Name validation
+    if (!form.name.trim()) {
+      setNameError("Name is required");
+      valid = false;
+    } else if (!/^[A-Z ]{3,}$/.test(form.name.trim())) {
+      setNameError(
+        "Name must be in uppercase, only letters and spaces, min 3 chars"
+      );
+      valid = false;
+    } else {
+      setNameError("");
+    }
+    // PRN validation (for students)
+    if (role === "student") {
+      if (!form.prn.trim()) {
+        setPrnError("PRN is required");
+        valid = false;
+      } else if (!/^\d{10}$/.test(form.prn.trim())) {
+        setPrnError("PRN must be exactly 10 digits");
+        valid = false;
+      } else {
+        setPrnError("");
+      }
+    } else {
+      setPrnError("");
+    }
+    // Passout year validation (for alumni)
+    if (role === "alumni") {
+      const year = parseInt(form.passout, 10);
+      const currentYear = new Date().getFullYear();
+      if (!form.passout.trim()) {
+        setPassoutError("Passout year is required");
+        valid = false;
+      } else if (
+        !/^\d{4}$/.test(form.passout.trim()) ||
+        year < 1950 ||
+        year > currentYear
+      ) {
+        setPassoutError(`Enter a valid year between 1950 and ${currentYear}`);
+        valid = false;
+      } else {
+        setPassoutError("");
+      }
+    } else {
+      setPassoutError("");
+    }
+    // Email validation
+    if (!form.email.trim()) {
+      setEmailError("Email is required");
+      valid = false;
+    } else if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+      setEmailError("Enter a valid email address");
+      valid = false;
+    } else {
+      setEmailError("");
+    }
+    // Password validation
+    if (!form.password) {
+      setPasswordError("Password is required");
+      valid = false;
+    } else if (
+      form.password.length < 6 ||
+      !/[A-Za-z]/.test(form.password) ||
+      !/\d/.test(form.password)
+    ) {
+      setPasswordError(
+        "Password must be at least 6 chars, include a letter and a number"
+      );
+      valid = false;
+    } else {
+      setPasswordError("");
+    }
+    // Role validation
+    if (!role) {
+      setRoleError("Role is required");
+      valid = false;
+    } else {
+      setRoleError("");
+    }
+    return valid;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle signup logic here
+    if (!validate()) return;
+    try {
+      const response = await fetch("http://localhost:5000/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, role }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        // Redirect to dashboard based on role
+        if (role === "student") {
+          window.location.href = "/dashboard/student";
+        } else if (role === "alumni") {
+          window.location.href = "/dashboard/alumni";
+        } else if (role === "teacher") {
+          window.location.href = "/dashboard/teacher";
+        } else if (role === "tpo") {
+          window.location.href = "/dashboard/tpo";
+        } else {
+          alert("Signup successful!");
+        }
+      } else {
+        alert(data.error || "Signup failed");
+      }
+    } catch (error) {
+      alert("An error occurred. Please try again.");
+    }
   };
 
   return (
@@ -93,6 +207,11 @@ const Signup = () => {
                   </option>
                 ))}
               </select>
+              {roleError && (
+                <p className="text-red-600 text-sm font-semibold mt-1">
+                  {roleError}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 font-semibold mb-2 text-lg">
@@ -145,6 +264,11 @@ const Signup = () => {
                   required
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
                 />
+                {passoutError && (
+                  <p className="text-red-600 text-sm font-semibold mt-1">
+                    {passoutError}
+                  </p>
+                )}
               </div>
             )}
             <div>
@@ -159,6 +283,11 @@ const Signup = () => {
                 required
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
               />
+              {emailError && (
+                <p className="text-red-600 text-sm font-semibold mt-1">
+                  {emailError}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 font-semibold mb-2 text-lg">
@@ -172,6 +301,11 @@ const Signup = () => {
                 required
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
               />
+              {passwordError && (
+                <p className="text-red-600 text-sm font-semibold mt-1">
+                  {passwordError}
+                </p>
+              )}
             </div>
             <button
               type="submit"

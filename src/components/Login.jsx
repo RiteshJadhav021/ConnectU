@@ -3,14 +3,44 @@ import { Link } from "react-router-dom";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [loginError, setLoginError] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
+    setLoginError("");
+    try {
+      const response = await fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        // Login successful
+        // Redirect to dashboard based on user role
+        const role = data.user?.role;
+        if (role === 'student') {
+          window.location.href = '/dashboard/student';
+        } else if (role === 'alumni') {
+          window.location.href = '/dashboard/alumni';
+        } else if (role === 'teacher') {
+          window.location.href = '/dashboard/teacher';
+        } else if (role === 'tpo') {
+          window.location.href = '/dashboard/tpo';
+        } else {
+          alert('Login successful!');
+        }
+      } else {
+        // Login failed
+        setLoginError(data.error || 'Login failed');
+      }
+    } catch (error) {
+      setLoginError('An error occurred. Please try again.');
+    }
   };
 
   return (
@@ -50,6 +80,9 @@ const Login = () => {
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
               />
             </div>
+            {loginError && (
+              <p className="text-red-600 text-sm font-semibold mt-1 text-center">{loginError}</p>
+            )}
             <button
               type="submit"
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-lg tracking-wide mt-2"
