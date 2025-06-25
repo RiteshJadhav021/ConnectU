@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useGsapSignupAnimation } from "./useGsapSignupAnimation";
+import gsap from "gsap";
 
 const roles = [
   { value: "student", label: "Student" },
@@ -23,15 +25,68 @@ const Signup = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [roleError, setRoleError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { formRef, imageRef, buttonRef, inputRefs, errorRefs, selectRef } = useGsapSignupAnimation();
+  const connectURef = React.useRef(null);
+
+  // For animated ConnectU letters
+  const cRef = React.useRef(null);
+  const eRef = React.useRef(null);
+  const uRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (connectURef.current) {
+      gsap.to(connectURef.current, {
+        keyframes: [
+          { scale: 1.12, rotation: 4, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+          { scale: 1.08, rotation: -4, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+          { scale: 1.15, rotation: 0, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+          { scale: 1, rotation: 0, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+        ],
+        repeat: -1,
+        yoyo: true,
+        ease: "power1.inOut",
+      });
+    }
+    // Animate C, e, U up and down
+    if (cRef.current) {
+      gsap.to(cRef.current, {
+        y: -8,
+        duration: 0.6,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: 0
+      });
+    }
+    if (eRef.current) {
+      gsap.to(eRef.current, {
+        y: -8,
+        duration: 0.6,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: 0.3
+      });
+    }
+    if (uRef.current) {
+      gsap.to(uRef.current, {
+        y: -8,
+        duration: 0.6,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: 0.6
+      });
+    }
+  }, []);
 
   const handleChange = (e) => {
     if (e.target.name === "name") {
       const value = e.target.value;
-      if (value && value !== value.toUpperCase()) {
-        setNameError("Name should be in capital letters");
-      } else {
-        setNameError("");
-      }
+      // Remove uppercase enforcement, allow any case
+      setNameError("");
       setForm({ ...form, [e.target.name]: value });
     } else if (e.target.name === "prn") {
       const value = e.target.value;
@@ -57,9 +112,9 @@ const Signup = () => {
     if (!form.name.trim()) {
       setNameError("Name is required");
       valid = false;
-    } else if (!/^[A-Z ]{3,}$/.test(form.name.trim())) {
+    } else if (!/^[A-Za-z ]{3,}$/.test(form.name.trim())) {
       setNameError(
-        "Name must be in uppercase, only letters and spaces, min 3 chars"
+        "Name must be only letters and spaces, min 3 chars"
       );
       valid = false;
     } else {
@@ -139,10 +194,12 @@ const Signup = () => {
     e.preventDefault();
     if (!validate()) return;
     try {
+      // Convert name to uppercase before sending to backend
+      const formToSend = { ...form, name: form.name.trim().toUpperCase() };
       const response = await fetch("http://localhost:5000/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, role }),
+        body: JSON.stringify({ ...formToSend, role }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -169,7 +226,7 @@ const Signup = () => {
   return (
     <div className="min-h-screen flex mt-20 bg-gradient-to-br from-indigo-200 via-white to-cyan-200">
       {/* Left Side: Project Image */}
-      <div className="hidden md:flex w-1/2 items-center justify-center">
+      <div ref={imageRef} className="hidden md:flex w-1/2 items-center justify-center">
         <img
           src="/pexels-pixabay-326235.jpg"
           alt="Signup Visual"
@@ -178,13 +235,39 @@ const Signup = () => {
       </div>
       {/* Right Side: Signup Form */}
       <div className="flex flex-col justify-center items-center w-full md:w-1/2 px-2 py-4 md:px-4 md:py-8">
-        <div className="w-full max-w-md bg-white/60 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/40 p-8 md:p-12">
+        <div ref={formRef} className="w-full max-w-md bg-white/60 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/40 p-8 md:p-12">
           <h2 className="text-4xl font-extrabold text-indigo-700 mb-8 text-center drop-shadow-lg">
             Sign Up
           </h2>
           <p className="text-center text-indigo-800 text-xl mb-8 font-bold drop-shadow-md tracking-wide">
             Create your account on{" "}
-            <span className="text-cyan-600">ConnectU</span>
+            <span
+              ref={connectURef}
+              className="inline-block select-none relative align-middle"
+              style={{
+                background: "none",
+                padding: 0,
+                margin: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.05em",
+                zIndex: 1,
+                verticalAlign: "middle"
+              }}
+            >
+              <span
+                ref={cRef}
+                style={{ display: "inline-block", zIndex: 2, position: "relative" }}
+              >C</span>onn
+              <span
+                ref={eRef}
+                style={{ display: "inline-block", zIndex: 2, position: "relative" }}
+              >e</span>ct
+              <span
+                ref={uRef}
+                style={{ display: "inline-block", zIndex: 2, position: "relative" }}
+              >U</span>
+            </span>
           </p>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -192,6 +275,7 @@ const Signup = () => {
                 Role
               </label>
               <select
+                ref={selectRef}
                 name="role"
                 value={role}
                 onChange={handleRoleChange}
@@ -208,7 +292,7 @@ const Signup = () => {
                 ))}
               </select>
               {roleError && (
-                <p className="text-red-600 text-sm font-semibold mt-1">
+                <p ref={el => errorRefs.current[0] = el} className="text-red-600 text-sm font-semibold mt-1">
                   {roleError}
                 </p>
               )}
@@ -218,6 +302,7 @@ const Signup = () => {
                 Enter Full Name
               </label>
               <input
+                ref={el => inputRefs.current[0] = el}
                 type="text"
                 name="name"
                 value={form.name}
@@ -226,7 +311,7 @@ const Signup = () => {
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
               />
               {nameError && (
-                <p className="text-red-600 text-sm font-semibold mt-1">
+                <p ref={el => errorRefs.current[1] = el} className="text-red-600 text-sm font-semibold mt-1">
                   {nameError}
                 </p>
               )}
@@ -237,15 +322,28 @@ const Signup = () => {
                   PRN Number
                 </label>
                 <input
+                  ref={el => inputRefs.current[1] = el}
                   type="text"
                   name="prn"
                   value={form.prn}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    // Only allow digits and max 10 characters
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setForm({ ...form, prn: value });
+                    if (value.length === 10 || value.length === 0) {
+                      setPrnError("");
+                    } else {
+                      setPrnError("PRN must be exactly 10 digits");
+                    }
+                  }}
                   required
+                  maxLength={10}
+                  pattern="\\d{10}"
+                  inputMode="numeric"
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
                 />
                 {prnError && (
-                  <p className="text-red-600 text-sm font-semibold mt-1">
+                  <p ref={el => errorRefs.current[2] = el} className="text-red-600 text-sm font-semibold mt-1">
                     {prnError}
                   </p>
                 )}
@@ -257,6 +355,7 @@ const Signup = () => {
                   Passout Year
                 </label>
                 <input
+                  ref={el => inputRefs.current[2] = el}
                   type="text"
                   name="passout"
                   value={form.passout}
@@ -265,7 +364,7 @@ const Signup = () => {
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
                 />
                 {passoutError && (
-                  <p className="text-red-600 text-sm font-semibold mt-1">
+                  <p ref={el => errorRefs.current[3] = el} className="text-red-600 text-sm font-semibold mt-1">
                     {passoutError}
                   </p>
                 )}
@@ -276,6 +375,7 @@ const Signup = () => {
                 Email ID
               </label>
               <input
+                ref={el => inputRefs.current[3] = el}
                 type="email"
                 name="email"
                 value={form.email}
@@ -284,7 +384,7 @@ const Signup = () => {
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
               />
               {emailError && (
-                <p className="text-red-600 text-sm font-semibold mt-1">
+                <p ref={el => errorRefs.current[4] = el} className="text-red-600 text-sm font-semibold mt-1">
                   {emailError}
                 </p>
               )}
@@ -293,21 +393,41 @@ const Signup = () => {
               <label className="block text-gray-700 font-semibold mb-2 text-lg">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
-              />
+              <div className="relative">
+                <input
+                  ref={el => inputRefs.current[4] = el}
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white/80 border border-gray-300 rounded-full p-2 shadow-sm hover:bg-indigo-100 transition-colors duration-150 focus:outline-none group"
+                  tabIndex={0}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.336-3.236.938-4.675M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.062-4.675A9.956 9.956 0 0122 9c0 5.523-4.477 10-10 10-.825 0-1.63-.1-2.4-.287" /></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm2.828-2.828A9.956 9.956 0 0122 12c0 5.523-4.477 10-10 10S2 17.523 2 12c0-2.21.896-4.21 2.343-5.657" /></svg>
+                  )}
+                  <span className="absolute left-1/2 -translate-x-1/2 bottom-10 opacity-0 group-hover:opacity-100 bg-black text-white text-xs rounded px-2 py-1 pointer-events-none transition-opacity duration-150 whitespace-nowrap z-10">
+                    {showPassword ? "Hide Password" : "Show Password"}
+                  </span>
+                </button>
+              </div>
               {passwordError && (
-                <p className="text-red-600 text-sm font-semibold mt-1">
+                <p ref={el => errorRefs.current[5] = el} className="text-red-600 text-sm font-semibold mt-1">
                   {passwordError}
                 </p>
               )}
             </div>
             <button
+              ref={buttonRef}
               type="submit"
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-lg tracking-wide mt-2"
             >

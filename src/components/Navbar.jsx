@@ -10,6 +10,9 @@ const Navbar = () => {
   const logoRef = useRef(null);
   const loginRef = useRef(null);
   const signupRef = useRef(null);
+  const cRef = useRef(null);
+  const eRef = useRef(null);
+  const uRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,25 +52,48 @@ const Navbar = () => {
 
   useEffect(() => {
     if (logoRef.current) {
-      gsap.fromTo(
-        logoRef.current,
-        { y: -40, opacity: 0, scale: 0.8, rotate: -8 },
-        { y: 0, opacity: 1, scale: 1, rotate: 0, duration: 1.1, ease: 'power4.out' }
-      );
+      // Animated ConnectU logo (same as Signup)
+      gsap.to(logoRef.current, {
+        keyframes: [
+          { scale: 1.12, rotation: 4, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+          { scale: 1.08, rotation: -4, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+          { scale: 1.15, rotation: 0, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+          { scale: 1, rotation: 0, color: "#0ea5e9", textShadow: "none", duration: 0.7 },
+        ],
+        repeat: -1,
+        yoyo: true,
+        ease: "power1.inOut",
+      });
     }
-    if (loginRef.current) {
-      gsap.fromTo(
-        loginRef.current,
-        { x: 40, opacity: 0, scale: 0.8 },
-        { x: 0, opacity: 1, scale: 1, duration: 1.1, delay: 0.3, ease: 'power4.out' }
-      );
+    if (cRef.current) {
+      gsap.to(cRef.current, {
+        y: -8,
+        duration: 0.6,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: 0
+      });
     }
-    if (signupRef.current) {
-      gsap.fromTo(
-        signupRef.current,
-        { x: 60, opacity: 0, scale: 0.8 },
-        { x: 0, opacity: 1, scale: 1, duration: 1.1, delay: 0.5, ease: 'power4.out' }
-      );
+    if (eRef.current) {
+      gsap.to(eRef.current, {
+        y: -8,
+        duration: 0.6,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: 0.3
+      });
+    }
+    if (uRef.current) {
+      gsap.to(uRef.current, {
+        y: -8,
+        duration: 0.6,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        delay: 0.6
+      });
     }
   }, []);
 
@@ -77,19 +103,51 @@ const Navbar = () => {
       <div className="flex items-center">
         <span
           ref={logoRef}
-          className="text-2xl md:text-3xl font-extrabold tracking-tight text-white drop-shadow-lg select-none flex items-center"
-          style={{ cursor: 'pointer' }}
+          className="text-2xl md:text-3xl font-extrabold tracking-tight select-none flex items-center cursor-pointer"
           onClick={() => navigate('/')}
         >
-          <span className="flex items-center bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 text-cyan-900 px-3 py-1 rounded-xl mr-2 shadow-md font-black italic transform -skew-x-6 border-2 border-white transition-all duration-200 hover:scale-110">
-            <svg className="w-7 h-7 mr-1 text-cyan-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" />
-              <path d="M8 15l4-4 4 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="ml-1 flex items-baseline">
-              Connect
-              <span className="ml-1 text-3xl text-cyan-900 font-black not-italic tracking-widest drop-shadow-lg">U</span>
-            </span>
+          <span
+            className="inline-block select-none relative align-middle"
+            style={{
+              background: "linear-gradient(90deg, #fbbf24 10%, #06b6d4 50%, #6366f1 90%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              fontWeight: 900,
+              fontSize: "2.3rem",
+              letterSpacing: "0.04em",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.05em",
+              zIndex: 1,
+              verticalAlign: "middle",
+              textShadow: "0 2px 12px #fff, 0 1px 0 #fff, 0 0px 2px #fff"
+            }}
+          >
+            <span
+              ref={cRef}
+              style={{ display: "inline-block", zIndex: 2, position: "relative", textShadow: "0 2px 12px #fff, 0 1px 0 #fff, 0 0px 2px #fff" }}
+            >C</span>onn
+            <span
+              ref={eRef}
+              style={{ display: "inline-block", zIndex: 2, position: "relative", textShadow: "0 2px 12px #fff, 0 1px 0 #fff, 0 0px 2px #fff" }}
+            >e</span>ct
+            <span
+              ref={uRef}
+              style={{
+                display: "inline-block",
+                zIndex: 2,
+                position: "relative",
+                background: "linear-gradient(90deg, #f43f5e 0%, #fbbf24 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                fontWeight: 900,
+                fontSize: "2.7rem",
+                marginLeft: "0.1em",
+                textShadow: "0 2px 12px #fff, 0 1px 0 #fff, 0 0px 2px #fff"
+              }}
+            >U</span>
           </span>
         </span>
       </div>

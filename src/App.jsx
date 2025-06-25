@@ -14,6 +14,10 @@ import StudentDashboard from './components/StudentDashboard';
 import AlumniDashboard from './components/AlumniDashboard';
 import TeacherDashboard from './components/TeacherDashboard';
 import TPODashboard from './components/TPODashboard';
+import Testimonials from './components/Testimonials';
+import UpcomingEvents from './components/UpcomingEvents';
+import Counters from './components/Counters';
+import FAQSection from './components/FAQSection';
 import { Routes, Route } from 'react-router-dom';
 
 function App() {
@@ -25,8 +29,12 @@ function App() {
           <>
             <CenteredVideo />
             <InfoBoxes />
+            <Counters />
             <ITCompaniesMarquee />
             <AlumniShowcase />
+            <Testimonials />
+            <UpcomingEvents />
+            <FAQSection />
           </>
         } />
         <Route path="/signup" element={<Signup />} />
