@@ -19,14 +19,16 @@ import UpcomingEvents from './components/UpcomingEvents';
 import Counters from './components/Counters';
 import FAQSection from './components/FAQSection';
 import { Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
     <>
-      <Navbar />
       <Routes>
         <Route path="/" element={
           <>
+            <Navbar />
             <CenteredVideo />
             <InfoBoxes />
             <Counters />
@@ -37,16 +39,16 @@ function App() {
             <FAQSection />
           </>
         } />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<><Navbar /><Signup /></>} />
+        <Route path="/login" element={<><Navbar /><Login /></>} />
         <Route path="/dashboard/student" element={<StudentDashboard />} />
         <Route path="/dashboard/alumni" element={<AlumniDashboard />} />
         <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
         <Route path="/dashboard/tpo" element={<TPODashboard />} />
       </Routes>
-      <Footer />
+      <ToastContainer />
     </>
-  );
+  )
 }
 
-export default App;
+export default App

@@ -74,7 +74,9 @@ const Login = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        // Login successful
+        // Save user and token to localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         // Redirect to dashboard based on user role
         const role = data.user?.role;
         if (role === 'student') {

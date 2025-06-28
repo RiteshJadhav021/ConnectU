@@ -203,6 +203,9 @@ const Signup = () => {
       });
       const data = await response.json();
       if (response.ok) {
+        // Save user and token to localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         // Redirect to dashboard based on role
         if (role === "student") {
           window.location.href = "/dashboard/student";
@@ -338,7 +341,7 @@ const Signup = () => {
                   }}
                   required
                   maxLength={10}
-                  pattern="\\d{10}"
+                  pattern="[0-9]{10}"
                   inputMode="numeric"
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 text-lg"
                 />
