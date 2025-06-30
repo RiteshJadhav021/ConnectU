@@ -1,18 +1,23 @@
 import React, { useRef, useState } from "react";
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
-const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded }) => {
+const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded, onEmailUpdated }) => {
   const fileInputRef = useRef();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [changePasswordMode, setChangePasswordMode] = useState(false);
   const [form, setForm] = useState({
     name: student?.name || '',
     email: student?.email || '',
     role: student?.role || 'student',
     passout: student?.passout || '',
   });
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [saving, setSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const navigate = useNavigate();
 
   if (!open) return null;
   // Get first letter of student name for avatar
@@ -57,6 +62,12 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle password form change
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+  };
+
   // Handle save profile
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -88,6 +99,7 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded }) => {
       if (res.ok) {
         toast.success('Profile updated!');
         if (onPhotoUploaded) onPhotoUploaded(data.student.img);
+        if (onEmailUpdated && data.student.email) onEmailUpdated(data.student.email);
         setEditMode(false);
         // Redirect to alumni dashboard if role changed to alumni
         if (form.role === 'alumni') {
@@ -103,6 +115,51 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Handle save password
+  const handleSavePassword = async () => {
+    setPasswordSaving(true);
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error('All password fields are required.');
+      setPasswordSaving(false);
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match.');
+      setPasswordSaving(false);
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/student/me/password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(passwordForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Password changed successfully!');
+        setChangePasswordMode(false);
+        setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        toast.error(data.error || 'Password change failed');
+      }
+    } catch (err) {
+      toast.error('Password change failed');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/';
   };
 
   return (
@@ -155,19 +212,14 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded }) => {
         <div className="flex flex-col gap-3 mb-4">
           {editMode ? (
             <>
-              <input
-                className="w-full py-2 px-3 rounded-xl border border-cyan-200 mb-2"
-                name="name"
-                value={form.name}
-                onChange={handleFormChange}
-                placeholder="Name"
-              />
+              {/* Only show email, not name, and clear field for editing */}
               <input
                 className="w-full py-2 px-3 rounded-xl border border-cyan-200 mb-2"
                 name="email"
                 value={form.email}
                 onChange={handleFormChange}
-                placeholder="Email"
+                placeholder="Enter new email"
+                autoComplete="off"
               />
               <select
                 className="w-full py-2 px-3 rounded-xl border border-cyan-200 mb-2"
@@ -203,16 +255,55 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded }) => {
                 Cancel
               </button>
             </>
+          ) : changePasswordMode ? (
+            <>
+              <input
+                className="w-full py-2 px-3 rounded-xl border border-cyan-200 mb-2"
+                name="oldPassword"
+                value={passwordForm.oldPassword}
+                onChange={handlePasswordChange}
+                placeholder="Old Password"
+                type="password"
+              />
+              <input
+                className="w-full py-2 px-3 rounded-xl border border-cyan-200 mb-2"
+                name="newPassword"
+                value={passwordForm.newPassword}
+                onChange={handlePasswordChange}
+                placeholder="New Password"
+                type="password"
+              />
+              <input
+                className="w-full py-2 px-3 rounded-xl border border-cyan-200 mb-2"
+                name="confirmPassword"
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordChange}
+                placeholder="Confirm New Password"
+                type="password"
+              />
+              <button
+                className="w-full py-2 rounded-xl bg-yellow-600 text-white font-semibold transition"
+                onClick={handleSavePassword}
+                disabled={passwordSaving}
+              >
+                {passwordSaving ? 'Saving...' : 'Save Password'}
+              </button>
+              <button
+                className="w-full py-2 rounded-xl bg-gray-200 text-gray-700 font-semibold transition mt-1"
+                onClick={() => setChangePasswordMode(false)}
+                disabled={passwordSaving}
+              >
+                Cancel
+              </button>
+            </>
           ) : (
             <>
-              <button className="w-full py-2 rounded-xl bg-cyan-100 hover:bg-cyan-200 text-cyan-800 font-semibold transition" onClick={() => setEditMode(true)}>Edit Profile</button>
-              <button className="w-full py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-semibold transition">Change Password</button>
-              <button className="w-full py-2 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-semibold transition">My Connections</button>
+              <button className="w-full py-2 rounded-xl bg-cyan-100 hover:bg-cyan-200 text-cyan-800 font-semibold transition" onClick={() => setEditMode(true)}>Edit Email</button>
+              <button className="w-full py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-semibold transition" onClick={() => setChangePasswordMode(true)}>Change Password</button>
+              <button className="w-full py-2 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-semibold transition" onClick={() => { onClose && onClose(); navigate('/dashboard/student/connections'); }}>My Connections</button>
+              <button className="w-full py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 font-semibold transition" onClick={handleLogout}>Logout</button>
             </>
           )}
-        </div>
-        <div className="flex flex-col gap-2 mb-2">
-          <button className="w-full py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 font-semibold transition">Logout</button>
         </div>
       </div>
       <style>{`

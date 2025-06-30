@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import MessageBox from "./MessageBox";
 import AlumniCard from "./AlumniCard";
 import StudentProfileMenu from "./StudentProfileMenu";
+import QnASection from './QnASection';
 import { FaUserCircle, FaRegCommentDots } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 
 const alumniList = [
 	{
@@ -43,6 +45,31 @@ const skills = [
 ];
 const companies = ["Google", "Microsoft", "Amazon", "TCS", "Infosys","Wipro","Accenture","Cognizant","HCL","IBM"];
 
+// Sample upcoming events data
+const upcomingEvents = [
+  {
+    title: "Alumni Networking Night",
+    date: "2025-07-10",
+    time: "6:00 PM",
+    location: "Main Auditorium",
+    description: "Meet and network with successful alumni from top tech companies. Open to all students!",
+  },
+  {
+    title: "Resume Building Workshop",
+    date: "2025-07-15",
+    time: "4:00 PM",
+    location: "Room 204, Career Center",
+    description: "Get tips from industry experts on how to craft a winning resume.",
+  },
+  {
+    title: "Tech Talk: AI in 2025",
+    date: "2025-07-20",
+    time: "2:00 PM",
+    location: "Online (Zoom)",
+    description: "A panel discussion with AI professionals about the future of artificial intelligence.",
+  },
+];
+
 const StudentDashboard = () => {
 	const [showMessages, setShowMessages] = useState(false);
 	const [search, setSearch] = useState("");
@@ -54,6 +81,7 @@ const StudentDashboard = () => {
 		const user = localStorage.getItem('user');
 		return user ? JSON.parse(user) : null;
 	}); // Store fetched student data
+	const navigate = useNavigate();
 
 	// Fetch student data on mount
 	useEffect(() => {
@@ -138,8 +166,17 @@ const StudentDashboard = () => {
 						{student ? student.name : "Profile"}
 					</span>
 				</button>
-				{/* Spacer for space-around effect */}
-				<div className="flex-1"></div>
+				{/* Post Button (center) */}
+				<button
+					className="flex-1 flex justify-center"
+				>
+					<button
+						className="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-full shadow transition"
+						onClick={() => navigate('/dashboard/student/post')}
+					>
+						Post
+					</button>
+				</button>
 				{/* Message Icon (right) */}
 				<button
 					className="text-cyan-700 hover:text-cyan-900 text-4xl flex-1 flex justify-end relative"
@@ -162,6 +199,15 @@ const StudentDashboard = () => {
 					if (user) {
 						const userObj = JSON.parse(user);
 						userObj.img = url;
+						localStorage.setItem('user', JSON.stringify(userObj));
+					}
+				}}
+				onEmailUpdated={(newEmail) => {
+					setStudent((prev) => ({ ...prev, email: newEmail }));
+					const user = localStorage.getItem('user');
+					if (user) {
+						const userObj = JSON.parse(user);
+						userObj.email = newEmail;
 						localStorage.setItem('user', JSON.stringify(userObj));
 					}
 				}}
@@ -241,6 +287,55 @@ const StudentDashboard = () => {
 			</div>
 			{/* Message Box Modal */}
 			<MessageBox open={showMessages} onClose={() => setShowMessages(false)} />
+			{/* Q&A Section Modal */}
+			{showMessages && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-indigo-100 via-white to-blue-100 rounded-2xl shadow-2xl p-0 max-w-3xl w-full relative animate-fadeInUp border-2 border-indigo-200">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none z-10"
+              onClick={() => setShowMessages(false)}
+              aria-label="Close Q&A"
+            >
+              ×
+            </button>
+            <div className="flex flex-col md:flex-row h-[70vh]">
+              <div className="flex-1 flex flex-col justify-start p-8 bg-white rounded-l-2xl overflow-y-auto max-h-[60vh] custom-scrollbar">
+                <QnASection />
+              </div>
+              <div className="hidden md:flex flex-col items-center justify-center w-64 bg-gradient-to-b from-indigo-200 to-blue-200 rounded-r-2xl p-6">
+                <svg className="w-20 h-20 text-indigo-400 mb-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 48 48">
+                  <path d="M24 4a20 20 0 100 40 20 20 0 000-40zm0 36a16 16 0 110-32 16 16 0 010 32zm-2-10v-4a2 2 0 014 0v4a2 2 0 01-4 0zm0-8a2 2 0 114 0 2 2 0 01-4 0z" />
+                </svg>
+                <div className="text-lg text-indigo-700 font-semibold text-center">Ask questions, get answers from alumni, teachers, and TPO!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+			{/* Upcoming Events Section */}
+			<section className="w-full max-w-5xl mx-auto mt-12 mb-8">
+    <h2 className="text-2xl font-bold text-indigo-700 mb-6 text-center flex items-center justify-center gap-2">
+      <span className="inline-block w-2 h-8 bg-indigo-400 rounded-full"></span>
+      Upcoming Events
+      <span className="inline-block w-2 h-8 bg-indigo-400 rounded-full"></span>
+    </h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {upcomingEvents.map((event, idx) => (
+        <div key={idx} className="bg-white rounded-2xl shadow-lg border border-indigo-100 p-6 flex flex-col gap-2 hover:shadow-2xl transition">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-indigo-600 font-bold text-lg">{event.title}</span>
+          </div>
+          <div className="text-sm text-gray-500 mb-1">
+            <span className="font-semibold">Date:</span> {event.date} &nbsp;|&nbsp; <span className="font-semibold">Time:</span> {event.time}
+          </div>
+          <div className="text-sm text-gray-500 mb-1">
+            <span className="font-semibold">Location:</span> {event.location}
+          </div>
+          <div className="text-gray-700 text-sm mb-2">{event.description}</div>
+        </div>
+      ))}
+    </div>
+  </section>
 		</div>
 	);
 };

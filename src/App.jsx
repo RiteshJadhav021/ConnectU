@@ -21,6 +21,8 @@ import FAQSection from './components/FAQSection';
 import { Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import StudentConnections from './components/StudentConnections';
+import PostPage from './components/PostPage';
 
 function App() {
   return (
@@ -37,14 +39,17 @@ function App() {
             <Testimonials />
             <UpcomingEvents />
             <FAQSection />
+            <Footer />
           </>
         } />
-        <Route path="/signup" element={<><Navbar /><Signup /></>} />
-        <Route path="/login" element={<><Navbar /><Login /></>} />
-        <Route path="/dashboard/student" element={<StudentDashboard />} />
-        <Route path="/dashboard/alumni" element={<AlumniDashboard />} />
-        <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
-        <Route path="/dashboard/tpo" element={<TPODashboard />} />
+        <Route path="/signup" element={<><Navbar /><Signup /><Footer /></>} />
+        <Route path="/login" element={<><Navbar /><Login /><Footer /></>} />
+        <Route path="/dashboard/student" element={<><StudentDashboard /><Footer /></>} />
+        <Route path="/dashboard/alumni" element={<><AlumniDashboard /><Footer /></>} />
+        <Route path="/dashboard/teacher" element={<><TeacherDashboard /><Footer /></>} />
+        <Route path="/dashboard/tpo" element={<><TPODashboard /><Footer /></>} />
+        <Route path="/dashboard/student/connections" element={<><StudentConnections /><Footer /></>} />
+        <Route path="/dashboard/student/post" element={<><PostPage /><Footer /></>} />
       </Routes>
       <ToastContainer />
     </>
