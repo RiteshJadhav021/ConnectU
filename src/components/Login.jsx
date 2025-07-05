@@ -74,11 +74,22 @@ const Login = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        // Save user and token to localStorage
+        // Save token to localStorage
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Fetch latest user profile based on role
+        let userProfile = data.user;
+        if (data.user?.role === 'alumni') {
+          // Fetch alumni profile with image
+          const profileRes = await fetch('http://localhost:5000/api/alumni/me', {
+            headers: { Authorization: `Bearer ${data.token}` },
+          });
+          if (profileRes.ok) {
+            userProfile = await profileRes.json();
+          }
+        }
+        localStorage.setItem('user', JSON.stringify(userProfile));
         // Redirect to dashboard based on user role
-        const role = data.user?.role;
+        const role = userProfile?.role;
         if (role === 'student') {
           window.location.href = '/dashboard/student';
         } else if (role === 'alumni') {

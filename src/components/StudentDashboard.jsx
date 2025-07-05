@@ -3,46 +3,10 @@ import MessageBox from "./MessageBox";
 import AlumniCard from "./AlumniCard";
 import StudentProfileMenu from "./StudentProfileMenu";
 import QnASection from './QnASection';
+import AlumniPostFeed from "./AlumniPostFeed";
 import { FaUserCircle, FaRegCommentDots } from "react-icons/fa";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
-const alumniList = [
-	{
-		name: "Amit Sharma",
-		img: "https://randomuser.me/api/portraits/men/32.jpg",
-		skills: ["React", "Node.js", "AWS"],
-		company: "Google",
-		description:
-			"Software Engineer at Google, passionate about cloud and web tech.",
-	},
-	{
-		name: "Priya Singh",
-		img: "https://randomuser.me/api/portraits/women/44.jpg",
-		skills: ["UI/UX", "Figma", "Design"],
-		company: "Microsoft",
-		description:
-			"Product Designer at Microsoft, loves building beautiful interfaces.",
-	},
-	{
-		name: "Rahul Mehta",
-		img: "https://randomuser.me/api/portraits/men/65.jpg",
-		skills: ["Python", "ML", "Data Science"],
-		company: "Amazon",
-		description: "Data Scientist at Amazon, working on AI and analytics.",
-	},
-];
-
-const skills = [
-	"React",
-	"Node.js",
-	"AWS",
-	"UI/UX",
-	"Figma",
-	"Design",
-	"Python",
-	"ML",
-	"Data Science",
-];
 const companies = ["Google", "Microsoft", "Amazon", "TCS", "Infosys","Wipro","Accenture","Cognizant","HCL","IBM"];
 
 // Sample upcoming events data
@@ -76,11 +40,14 @@ const StudentDashboard = () => {
 	const [selectedSkills, setSelectedSkills] = useState([]);
 	const [selectedCompanies, setSelectedCompanies] = useState([]);
 	const [showProfile, setShowProfile] = useState(false);
+	const [showAlumniPosts, setShowAlumniPosts] = useState(false);
 	const [student, setStudent] = useState(() => {
 		// Try to get user from localStorage as fallback
 		const user = localStorage.getItem('user');
 		return user ? JSON.parse(user) : null;
 	}); // Store fetched student data
+	const [alumniList, setAlumniList] = useState([]);
+	const [allSkills, setAllSkills] = useState([]);
 	const navigate = useNavigate();
 
 	// Fetch student data on mount
@@ -110,18 +77,36 @@ const StudentDashboard = () => {
 		fetchStudent();
 	}, []);
 
+	// Fetch alumni list from backend
+	useEffect(() => {
+		fetch('http://localhost:5000/api/alumni')
+			.then(res => res.json())
+			.then(data => {
+				setAlumniList(data);
+				// Collect all unique skills from alumni
+				const skillsSet = new Set();
+				data.forEach(alumni => {
+					if (Array.isArray(alumni.skills)) {
+						alumni.skills.forEach(skill => skillsSet.add(skill));
+					}
+				});
+				setAllSkills(Array.from(skillsSet));
+			})
+			.catch(() => setAlumniList([]));
+	}, []);
+
 	// Filter alumni based on search and filters
 	const filteredAlumni = alumniList.filter((a) => {
 		const matchesSearch =
 			a.name.toLowerCase().includes(search.toLowerCase()) ||
-			a.skills.some((s) => s.toLowerCase().includes(search.toLowerCase())) ||
-			a.company.toLowerCase().includes(search.toLowerCase());
+			(a.skills && a.skills.some((s) => s.toLowerCase().includes(search.toLowerCase()))) ||
+			(a.company && a.company.toLowerCase().includes(search.toLowerCase()));
 		const matchesSkills =
 			selectedSkills.length === 0 ||
-			selectedSkills.every((s) => a.skills.includes(s));
+			selectedSkills.every((s) => a.skills && a.skills.includes(s));
 		const matchesCompanies =
 			selectedCompanies.length === 0 ||
-			selectedCompanies.includes(a.company);
+			(a.company && selectedCompanies.includes(a.company));
 		return matchesSearch && matchesSkills && matchesCompanies;
 	});
 
@@ -166,15 +151,15 @@ const StudentDashboard = () => {
 						{student ? student.name : "Profile"}
 					</span>
 				</button>
-				{/* Post Button (center) */}
+				{/* View Alumni Posts Button (center) */}
 				<button
 					className="flex-1 flex justify-center"
 				>
 					<button
-						className="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-full shadow transition"
-						onClick={() => navigate('/dashboard/student/post')}
+						className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow transition"
+						onClick={() => navigate('/alumni-posts')}
 					>
-						Post
+						  Posts Feed
 					</button>
 				</button>
 				{/* Message Icon (right) */}
@@ -221,7 +206,7 @@ const StudentDashboard = () => {
 						Filter by Skills
 					</h3>
 					<div className="flex flex-wrap gap-2 mb-8">
-						{skills.map((skill) => (
+						{allSkills.map((skill) => (
 							<button
 								key={skill}
 								onClick={() => toggleSkill(skill)}
@@ -261,6 +246,8 @@ const StudentDashboard = () => {
 				</aside>
 				{/* Center Content */}
 				<main className="flex-1 flex flex-col items-center">
+					{/* Show Alumni Posts Feed if toggled */}
+					{showAlumniPosts && <AlumniPostFeed />}
 					{/* Search Bar */}
 					<div className="w-full max-w-2xl mb-8">
 						<input

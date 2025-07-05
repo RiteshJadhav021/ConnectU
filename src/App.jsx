@@ -18,11 +18,13 @@ import Testimonials from './components/Testimonials';
 import UpcomingEvents from './components/UpcomingEvents';
 import Counters from './components/Counters';
 import FAQSection from './components/FAQSection';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import StudentConnections from './components/StudentConnections';
 import PostPage from './components/PostPage';
+import MyPosts from "./components/MyPosts";
+import AlumniPostFeed from "./components/AlumniPostFeed";
 
 function App() {
   return (
@@ -50,6 +52,9 @@ function App() {
         <Route path="/dashboard/tpo" element={<><TPODashboard /><Footer /></>} />
         <Route path="/dashboard/student/connections" element={<><StudentConnections /><Footer /></>} />
         <Route path="/dashboard/student/post" element={<><PostPage /><Footer /></>} />
+        <Route path="/dashboard/student/myposts" element={<><MyPosts /><Footer /></>} />
+        <Route path="/my-posts" element={<MyPosts />} />
+        <Route path="/alumni-posts" element={<><AlumniPostFeed /></>} />
       </Routes>
       <ToastContainer />
     </>
