@@ -25,6 +25,9 @@ import StudentConnections from './components/StudentConnections';
 import PostPage from './components/PostPage';
 import MyPosts from "./components/MyPosts";
 import AlumniPostFeed from "./components/AlumniPostFeed";
+import AlumniMyPosts from "./components/AlumniMyPosts";
+import TPOMyPosts from "./components/TPOMyPosts";
+import ChatPage from './components/ChatPage';
 
 function App() {
   return (
@@ -54,7 +57,9 @@ function App() {
         <Route path="/dashboard/student/post" element={<><PostPage /><Footer /></>} />
         <Route path="/dashboard/student/myposts" element={<><MyPosts /><Footer /></>} />
         <Route path="/my-posts" element={<MyPosts />} />
+        <Route path="/tpo-posts" element={<><TPOMyPosts /><Footer /></>} />
         <Route path="/alumni-posts" element={<><AlumniPostFeed /></>} />
+        <Route path="/chat/:alumniId" element={<ChatPage />} />
       </Routes>
       <ToastContainer />
     </>

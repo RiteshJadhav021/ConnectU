@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { FaUserCircle, FaTrash } from "react-icons/fa";
+import { FaUserCircle, FaTrash, FaBell, FaEnvelope } from "react-icons/fa";
 import { toast } from "react-toastify";
+import Modal from "./Modal";
+import { useNavigate } from "react-router-dom";
 
 const AlumniDashboard = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -20,6 +22,21 @@ const AlumniDashboard = () => {
   const [postImagePreview, setPostImagePreview] = useState("");
   const [posting, setPosting] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [activeCommentPost, setActiveCommentPost] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [alumni, setAlumni] = useState(() => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  });
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [showRequests, setShowRequests] = useState(false);
+  const [hasUnseenRequests, setHasUnseenRequests] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [studentDetails, setStudentDetails] = useState({});
+  const [showMessages, setShowMessages] = useState(false);
+  const [alumniIds, setAlumniIds] = useState([]);
+  const navigate = useNavigate();
 
   // Fetch alumni data on mount (from localStorage or API)
   useEffect(() => {
@@ -51,17 +68,102 @@ const AlumniDashboard = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/alumni/posts', {
+        // Fetch all posts from TPO endpoint (returns all posts: Alumni + TPO)
+        const res = await fetch('http://localhost:5000/api/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (res.ok) {
           const data = await res.json();
-          setPosts(data);
+          // Sort posts by createdAt descending
+          const sortedPosts = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setPosts(sortedPosts);
         }
       } catch {}
     };
     fetchPosts();
   }, []);
+
+  // Fetch pending connection requests for this alumni
+  useEffect(() => {
+    if (!profile?._id) return;
+    fetch(`http://localhost:5000/api/connections/received/${profile._id}`)
+      .then(res => res.json())
+      .then(data => {
+        setPendingRequests(data || []);
+        setHasUnseenRequests((data || []).some(r => !r.seenByAlumni));
+      })
+      .catch(() => setPendingRequests([]));
+  }, [profile?._id]);
+
+  // Fetch all alumni IDs on mount
+  useEffect(() => {
+    fetch('http://localhost:5000/api/alumni/all-ids')
+      .then(res => res.json())
+      .then(ids => setAlumniIds(ids.map(id => id.toString())))
+      .catch(() => setAlumniIds([]));
+  }, []);
+
+  // Fetch conversations for this alumni (group by student, get latest message)
+  useEffect(() => {
+    if (!profile?._id || !alumniIds) return;
+    setLoadingConversations(true);
+    fetch(`http://localhost:5000/api/messages/alumni/${profile._id}`)
+      .then(res => res.json())
+      .then(async data => {
+        // Group messages by studentId using fromUser/toUser
+        const studentConvs = {};
+        for (const msg of data) {
+          // Determine the other user
+          const otherId = String(msg.fromUser) === String(profile._id) ? String(msg.toUser) : String(msg.fromUser);
+          // Only include if the other user is NOT an alumni
+          if (!alumniIds.map(String).includes(otherId)) {
+            if (!studentConvs[otherId]) studentConvs[otherId] = [];
+            studentConvs[otherId].push(msg);
+          }
+        }
+        // For each student, get latest message
+        const convs = Object.entries(studentConvs).map(([studentId, msgs]) => {
+          const sorted = msgs.sort((a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt));
+          return {
+            studentId,
+            lastMessage: sorted[0],
+          };
+        });
+        // Fetch student details for each studentId (force ObjectId string)
+        const detailsPromises = convs.map(async conv => {
+          try {
+            const res = await fetch(`http://localhost:5000/api/students/${conv.studentId}`);
+            if (res.ok) {
+              const student = await res.json();
+              return {
+                ...conv,
+                studentName: student.name || 'Unknown',
+                studentImg: student.img && student.img.length > 0 ? student.img : '/default-avatar.png',
+              };
+            } else {
+              return {
+                ...conv,
+                studentName: 'Unknown',
+                studentImg: '/default-avatar.png',
+              };
+            }
+          } catch (error) {
+            return {
+              ...conv,
+              studentName: 'Unknown',
+              studentImg: '/default-avatar.png',
+            };
+          }
+        });
+        const convsWithDetails = await Promise.all(detailsPromises);
+        setConversations(convsWithDetails);
+        setLoadingConversations(false);
+      })
+      .catch((error) => {
+        setConversations([]);
+        setLoadingConversations(false);
+      });
+  }, [profile?._id, alumniIds]);
 
   // Handle adding a skill
   const addSkill = () => {
@@ -213,18 +315,19 @@ const AlumniDashboard = () => {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-          // Do NOT set Content-Type when using FormData
         },
         body: formData,
       });
       if (res.ok) {
-        // Fetch all posts again to get populated author
-        const postsRes = await fetch('http://localhost:5000/api/alumni/posts', {
+        // Fetch all posts again from TPO endpoint to show all posts
+        const postsRes = await fetch('http://localhost:5000/api/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (postsRes.ok) {
           const data = await postsRes.json();
-          setPosts(data);
+          // Sort posts by createdAt descending
+          const sortedPosts = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setPosts(sortedPosts);
         }
         setShowPostModal(false);
         setPostDescription("");
@@ -232,9 +335,18 @@ const AlumniDashboard = () => {
         setPostImagePreview("");
         toast.success('Post created!');
       } else {
-        toast.error('Failed to create post.');
+        let errorText = '';
+        try {
+          const errorData = await res.json();
+          errorText = errorData.error || JSON.stringify(errorData);
+        } catch (e) {
+          errorText = await res.text();
+        }
+        console.error('Failed to create post:', errorText, 'Status:', res.status);
+        toast.error(`Failed to create post. Status: ${res.status}. ${errorText}`);
       }
-    } catch {
+    } catch (err) {
+      console.error('Error creating post:', err);
       toast.error('Failed to create post.');
     }
     setPosting(false);
@@ -293,6 +405,79 @@ const AlumniDashboard = () => {
     );
   };
 
+  // Like a post (persistent, only once per user)
+  const handleLike = async (postId) => {
+    if (!alumni) {
+      alert("You must be logged in to like a post.");
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/alumni/posts/${postId}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: alumni.email || alumni._id || alumni.id })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(posts => {
+          // Update the liked post
+          const updatedPosts = posts.map(post =>
+            post._id === postId ? { ...post, likes: data.likes, likedBy: data.likedBy } : post
+          );
+          // Sort by createdAt descending
+          return [...updatedPosts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        });
+      }
+    } catch (err) {
+      alert("Failed to like post");
+    }
+  };
+
+  // Comment on a post (persistent)
+  const handleCommentSubmit = async () => {
+    if (!commentText.trim()) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/alumni/posts/${activeCommentPost}/comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: alumni?.name || "Alumni",
+          text: commentText
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(posts => posts.map(post =>
+          post._id === activeCommentPost ? { ...post, comments: data.comments } : post
+        ));
+        setCommentText("");
+      }
+    } catch (err) {
+      alert("Failed to add comment");
+    }
+  };
+
+  // Mark requests as seen
+  const markRequestsSeen = () => {
+    if (!profile?._id) return;
+    fetch(`http://localhost:5000/api/connections/notifications/alumni/${profile._id}/seen`, { method: "POST" })
+      .then(() => setHasUnseenRequests(false))
+      .catch(() => {});
+  };
+
+  // Accept/Reject request
+  const handleRespond = (requestId, action) => {
+    fetch(`http://localhost:5000/api/connections/respond`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestId, action }),
+    })
+      .then(res => res.json())
+      .then(() => {
+        setPendingRequests(prev => prev.filter(r => r._id !== requestId));
+      });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-yellow-100 via-white to-orange-100">
       {/* Navbar */}
@@ -320,8 +505,32 @@ const AlumniDashboard = () => {
         <div className="flex-1 flex justify-center">
           {/* <span className="text-xl font-bold text-yellow-700">Alumni Dashboard</span> */}
         </div>
-        {/* Right side: Post button */}
-        <div className="flex-1 flex justify-end">
+        {/* Right side: Message, Notification, Post button */}
+        <div className="flex-1 flex justify-end items-center gap-4">
+          <button
+            className="text-cyan-500 hover:text-cyan-700 text-3xl relative"
+            aria-label="Messages"
+            title="View Messages"
+            onClick={() => setShowMessages(v => !v)}
+          >
+            <FaEnvelope />
+            {conversations.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
+            )}
+          </button>
+          <button
+            className="text-yellow-500 hover:text-yellow-600 text-3xl relative"
+            aria-label="Notifications"
+            onClick={() => {
+              setShowRequests(true);
+              markRequestsSeen();
+            }}
+          >
+            <FaBell />
+            {hasUnseenRequests && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
+            )}
+          </button>
           <button
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-xl shadow transition duration-200 text-base"
             onClick={() => setShowPostModal(true)}
@@ -350,7 +559,7 @@ const AlumniDashboard = () => {
                 className="w-full px-4 py-2 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold text-left"
                 onClick={() => {
                   setShowProfileMenu(false);
-                  window.location.href = '/my-posts';
+                  navigate('/my-posts');
                 }}
               >
                 My Posts
@@ -530,6 +739,75 @@ const AlumniDashboard = () => {
           </div>
         </div>
       )}
+      {/* Connection Requests Modal */}
+      {showRequests && (
+        <Modal onClose={() => setShowRequests(false)} title="Pending Connection Requests">
+          {pendingRequests.length === 0 ? (
+            <div className="text-center text-gray-500">No pending requests.</div>
+          ) : (
+            <ul className="divide-y">
+              {pendingRequests.map((req, idx) => (
+                <li key={req._id || idx} className="py-2 flex items-center gap-3">
+                  <img src={req.studentImg || '/default-avatar.png'} alt="student" className="w-8 h-8 rounded-full" />
+                  <span className="font-semibold text-yellow-700">{req.studentName}</span>
+                  <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full ml-2" onClick={() => handleRespond(req._id, "accept")}>Accept</button>
+                  <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full ml-2" onClick={() => handleRespond(req._id, "reject")}>Reject</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Modal>
+      )}
+      {/* Messages Dropdown Modal */}
+      {showMessages && (
+        <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/20" onClick={() => setShowMessages(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl mt-20 mr-8 p-4 w-96 max-h-[70vh] overflow-y-auto border-2 border-cyan-200 animate-fadeInUp" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-bold text-cyan-700">Messages from Students</h3>
+              <button className="text-gray-400 hover:text-red-500 text-2xl font-bold" onClick={() => setShowMessages(false)} aria-label="Close Messages">×</button>
+            </div>
+            {loadingConversations ? (
+              <div className="text-cyan-500">Loading...</div>
+            ) : conversations.length === 0 ? (
+              <div className="text-gray-400">No conversations yet.</div>
+            ) : (
+              <ul className="divide-y">
+                {conversations.map(conv => {
+                  const name = conv.studentName && conv.studentName !== 'Student' ? conv.studentName : 'Unknown';
+                  const img = conv.studentImg && conv.studentImg !== '/default-avatar.png' ? conv.studentImg : '';
+                  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+                  return (
+                    <li key={conv.studentId} className="py-3 flex items-center gap-3">
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={name}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-cyan-300"
+                          onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full border-2 border-cyan-300 bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-lg">
+                          {initials}
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="font-semibold text-cyan-800">{name}</div>
+                        <div className="text-xs text-gray-500 truncate max-w-[180px]">{conv.lastMessage?.content || 'No messages yet.'}</div>
+                      </div>
+                      <button
+                        className="ml-auto bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1 rounded-full text-xs font-semibold transition"
+                        onClick={() => navigate(`/chat/${conv.studentId}`)}
+                      >
+                        Open
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
       {/* Main Content Placeholder */}
       <main className="flex-1 flex flex-col items-center justify-center w-full">
         {/* Remove welcome text */}
@@ -539,7 +817,21 @@ const AlumniDashboard = () => {
           {posts.map((post, idx) => (
             <div key={post._id || idx} className="bg-white rounded-2xl shadow p-6 border border-gray-100">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-semibold text-indigo-700">Alumni: {post.author && post.author.name ? post.author.name : 'Unknown'}</span>
+                <span className="font-semibold text-indigo-700">
+                  {post.authorModel === 'Alumni'
+                    ? `Alumni: ${
+                        post.author && post.author.name && post.author.name !== 'Unknown'
+                          ? post.author.name
+                          : post.authorName && post.authorName !== 'Unknown'
+                            ? post.authorName
+                            : profile.name && profile.name !== 'Unknown'
+                              ? profile.name
+                              : 'Alumni'
+                      }`
+                    : post.authorModel === 'TPO'
+                      ? `TPO: ${post.author && post.author.name ? post.author.name : 'TPO'}`
+                      : 'Unknown'}
+                </span>
                 <span className="text-gray-400 text-xs">{post.createdAt ? post.createdAt.slice(0, 10) : ''}</span>
                 {isMyPost(post) && (
                   <button
@@ -556,10 +848,22 @@ const AlumniDashboard = () => {
                 <img src={post.image} alt="Post" className="w-full rounded-xl mb-2" />
               )}
               <div className="flex gap-4 mt-2">
-                <button className="flex items-center gap-1 text-gray-600 hover:text-red-500 px-3 py-1 rounded-full border border-gray-200">
-                  <span>♡</span> <span>{post.likes || 0} Like</span>
-                </button>
-                <button className="flex items-center gap-1 text-gray-600 hover:text-blue-500 px-3 py-1 rounded-full border border-gray-200">
+                {(() => {
+                  const userId = alumni?.email || alumni?._id || alumni?.id;
+                  const hasLiked = post.likedBy && userId && post.likedBy.includes(userId);
+                  return (
+                    <button
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full border border-gray-200 ${hasLiked ? 'bg-red-100 text-red-500 cursor-not-allowed' : 'text-gray-600 hover:text-red-500'}`}
+                      onClick={() => !hasLiked && handleLike(post._id)}
+                      disabled={hasLiked}
+                      title={hasLiked ? 'You have already liked this post' : 'Like this post'}
+                    >
+                      <span>{hasLiked ? '♥' : '♡'}</span> <span>{post.likes || 0} Like</span>
+                    </button>
+                  );
+                })()}
+                <button className="flex items-center gap-1 text-gray-600 hover:text-blue-500 px-3 py-1 rounded-full border border-gray-200"
+                  onClick={() => setActiveCommentPost(post._id)}>
                   <span>💬</span> <span>{post.comments ? post.comments.length : 0} Comment</span>
                 </button>
               </div>
@@ -567,6 +871,41 @@ const AlumniDashboard = () => {
           ))}
         </div>
       </main>
+      {/* Right-side Comment Box */}
+      {activeCommentPost && (
+        <div className="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl border-l border-blue-200 z-50 flex flex-col animate-slideInRight">
+          <button className="self-end m-4 text-2xl text-gray-400 hover:text-red-500 font-bold" onClick={() => setActiveCommentPost(null)} aria-label="Close Comments">×</button>
+          <div className="p-6 flex-1 flex flex-col">
+            <h3 className="text-xl font-bold text-blue-700 mb-4 border-b pb-2 flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+              </svg>
+              Comments
+            </h3>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                className="border-2 border-blue-200 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Add a comment..."
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+              />
+              <button onClick={handleCommentSubmit} className="px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition">Post</button>
+            </div>
+            <ul className="pl-2 mt-2 space-y-3 overflow-y-auto max-h-72 custom-scrollbar">
+              {(posts.find(p => p._id === activeCommentPost)?.comments || []).length === 0 ? (
+                <li className="text-gray-400 italic">No comments yet. Be the first to comment!</li>
+              ) : (
+                posts.find(p => p._id === activeCommentPost).comments.map(c => (
+                  <li key={c.id} className="bg-blue-50 rounded-lg px-3 py-2 text-gray-800 shadow-sm">
+                    <span className="font-semibold text-blue-700">{c.user}:</span> {c.text}
+                  </li>
+                ))
+             ) }
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

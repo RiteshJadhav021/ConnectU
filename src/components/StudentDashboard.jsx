@@ -4,8 +4,9 @@ import AlumniCard from "./AlumniCard";
 import StudentProfileMenu from "./StudentProfileMenu";
 import QnASection from './QnASection';
 import AlumniPostFeed from "./AlumniPostFeed";
-import { FaUserCircle, FaRegCommentDots } from "react-icons/fa";
+import { FaUserCircle, FaRegCommentDots, FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import Modal from "./Modal"; // (Assume a simple Modal component exists or will be created)
 
 const companies = ["Google", "Microsoft", "Amazon", "TCS", "Infosys","Wipro","Accenture","Cognizant","HCL","IBM"];
 
@@ -48,27 +49,40 @@ const StudentDashboard = () => {
 	}); // Store fetched student data
 	const [alumniList, setAlumniList] = useState([]);
 	const [allSkills, setAllSkills] = useState([]);
+	const [stages, setStages] = useState({}); // Track stage for each alumni
+	const [connectionNotifications, setConnectionNotifications] = useState([]);
+	const [showNotifications, setShowNotifications] = useState(false);
+	const [myConnections, setMyConnections] = useState([]);
+	const [showConnections, setShowConnections] = useState(false);
 	const navigate = useNavigate();
+
+	// Only render after student data is loaded
+	// if (!student || !student._id) {
+	// 	return <div className="flex items-center justify-center min-h-screen text-xl text-cyan-700 font-bold">Loading student data...</div>;
+	// }
 
 	// Fetch student data on mount
 	useEffect(() => {
+		console.log("About to fetch student data...");
 		const fetchStudent = async () => {
 			try {
 				const token = localStorage.getItem("token");
+				console.log("Token in localStorage:", token);
 				const res = await fetch("/api/student/me", {
 					headers: {
 						Authorization: `Bearer ${token}`,
 					},
 				});
+				console.log("Student fetch status:", res.status);
 				if (res.ok) {
 					const data = await res.json();
-					// If API returns a different user, update localStorage and state
-					const localUser = localStorage.getItem('user');
-					if (!localUser || (localUser && JSON.parse(localUser).email !== data.email)) {
-						localStorage.setItem('user', JSON.stringify(data));
-					}
-					setStudent(data);
 					console.log("Fetched student data:", data);
+					setStudent(data);
+					// Always update localStorage with full student object (including _id)
+					localStorage.setItem('user', JSON.stringify(data));
+				} else {
+					const errText = await res.text();
+					console.error("Student fetch failed:", errText);
 				}
 			} catch (err) {
 				console.error("Failed to fetch student data", err);
@@ -94,6 +108,53 @@ const StudentDashboard = () => {
 			})
 			.catch(() => setAlumniList([]));
 	}, []);
+
+	// Sync stages with backend connection requests
+	useEffect(() => {
+  if (!student?._id) return;
+  fetch(`http://localhost:5000/api/connections/requested/${student._id}`)
+    .then(res => res.json())
+    .then(data => {
+      // data should be an array of { alumniId, status }
+      const newStages = {};
+      (data || []).forEach(req => {
+        newStages[req.alumniId] = req.status; // status: 'pending', 'accepted', etc.
+      });
+      console.log('Fetched from backend, newStages:', newStages);
+      setStages(newStages);
+    })
+    .catch(() => {});
+}, [student?._id]);
+
+	// Fetch connection notifications for student (with polling)
+	useEffect(() => {
+		if (!student?._id) return;
+		const fetchNotifications = () => {
+			fetch(`http://localhost:5000/api/connections/notifications/student/${student._id}`)
+				.then(res => res.json())
+				.then(data => setConnectionNotifications(data || []))
+				.catch(() => setConnectionNotifications([]));
+		};
+		fetchNotifications(); // initial fetch
+		const interval = setInterval(fetchNotifications, 5000); // poll every 5 seconds
+		return () => clearInterval(interval);
+	}, [student?._id]);
+
+	// Fetch my accepted connections
+	const fetchMyConnections = () => {
+		if (!student?._id) return;
+		fetch(`http://localhost:5000/api/connections/my/${student._id}`)
+			.then(res => res.json())
+			.then(data => setMyConnections(data || []))
+			.catch(() => setMyConnections([]));
+	};
+
+	// Mark notifications as seen
+	const markNotificationsSeen = () => {
+		if (!student?._id) return;
+		fetch(`http://localhost:5000/api/connections/notifications/student/${student._id}/seen`, { method: "POST" })
+		.then(() => setConnectionNotifications((prev) => prev.map(n => ({ ...n, seen: true }))))		.catch(() => {});
+	};
 
 	// Filter alumni based on search and filters
 	const filteredAlumni = alumniList.filter((a) => {
@@ -125,6 +186,41 @@ const StudentDashboard = () => {
 		);
 	};
 
+	// Send connection request to backend and update stage
+	// This function ensures the UI shows 'Pending' immediately after clicking Connect
+	const handleStageChange = async (alumniId) => {
+  if (!student?._id) return;
+  // Optimistically set the stage to 'pending' for instant feedback
+  setStages((prev) => {
+    const updated = { ...prev, [alumniId]: 'pending' };
+    console.log('Updated stages:', updated);
+    return updated;
+  });
+  try {
+    const res = await fetch('http://localhost:5000/api/connections/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromStudent: student._id, toAlumni: alumniId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setStages((prev) => {
+        const newStages = { ...prev };
+        delete newStages[alumniId];
+        return newStages;
+      });
+      alert(data.error || 'Failed to send connection request.');
+    }
+  } catch (err) {
+    setStages((prev) => {
+      const newStages = { ...prev };
+      delete newStages[alumniId];
+      return newStages;
+    });
+    alert('Failed to send connection request.');
+  }
+};
+
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-blue-100 flex flex-col">
 			{/* Custom Dashboard Navbar */}
@@ -151,26 +247,40 @@ const StudentDashboard = () => {
 						{student ? student.name : "Profile"}
 					</span>
 				</button>
-				{/* View Alumni Posts Button (center) */}
-				<button
-					className="flex-1 flex justify-center"
-				>
+				{/* Right side: Posts Feed, Notification, Message icons */}
+				<div className="flex-1 flex justify-end items-center gap-4">
 					<button
-						className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow transition"
+						className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow transition flex items-center gap-2"
 						onClick={() => navigate('/alumni-posts')}
+						aria-label="Posts Feed"
 					>
-						  Posts Feed
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" d="M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h3l2-2h4l2 2h3a2 2 0 012 2v12a2 2 0 01-2 2z" />
+						</svg>
+						Posts Feed
 					</button>
-				</button>
-				{/* Message Icon (right) */}
-				<button
-					className="text-cyan-700 hover:text-cyan-900 text-4xl flex-1 flex justify-end relative"
-					aria-label="Messages"
-					onClick={() => setShowMessages(true)}
-				>
-					<FaRegCommentDots />
-					<span className="absolute -top-1 -right-2 w-3 h-3 bg-pink-500 rounded-full border-2 border-white animate-pulse"></span>
-				</button>
+					<button
+						className="text-yellow-500 hover:text-yellow-600 text-3xl relative"
+						aria-label="Notifications"
+						onClick={() => {
+							setShowNotifications(true);
+							markNotificationsSeen();
+						}}
+					>
+						<FaBell />
+						{connectionNotifications.some(n => !n.seen) && (
+							<span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
+						)}
+					</button>
+					<button
+						className="text-cyan-700 hover:text-cyan-900 text-4xl relative"
+						aria-label="Messages"
+						onClick={() => setShowMessages(true)}
+					>
+						<FaRegCommentDots />
+						<span className="absolute -top-1 -right-2 w-3 h-3 bg-pink-500 rounded-full border-2 border-white animate-pulse"></span>
+					</button>
+				</div>
 			</nav>
 			{/* Student Profile Menu Modal */}
 			<StudentProfileMenu
@@ -196,11 +306,52 @@ const StudentDashboard = () => {
 						localStorage.setItem('user', JSON.stringify(userObj));
 					}
 				}}
+				myConnections={myConnections}
+				onShowConnections={() => {
+					fetchMyConnections();
+					setShowConnections(true);
+				}}
 			/>
+			{/* Notification Modal */}
+			{showNotifications && (
+				<Modal onClose={() => setShowNotifications(false)} title="New Connections">
+					{connectionNotifications.length === 0 ? (
+						<div className="text-center text-gray-500">No new connections.</div>
+					) : (
+						<ul className="divide-y">
+							{connectionNotifications.map((n, idx) => (
+								<li key={n._id || idx} className="py-2 flex items-center gap-3">
+									<img src={n.alumniImg || '/default-avatar.png'} alt="alumni" className="w-8 h-8 rounded-full" />
+									<span className="font-semibold text-cyan-700">{n.alumniName}</span>
+									<span className="text-green-600">accepted your connection request!</span>
+								</li>
+							))}
+						</ul>
+					)}
+				</Modal>
+			)}
+			{/* My Connections Modal */}
+			{showConnections && (
+				<Modal onClose={() => setShowConnections(false)} title="My Connections">
+					{myConnections.length === 0 ? (
+						<div className="text-center text-gray-500">No connections yet.</div>
+					) : (
+						<ul className="divide-y">
+							{myConnections.map((conn, idx) => (
+								<li key={conn._id || idx} className="py-2 flex items-center gap-3">
+									<img src={conn.alumniImg || '/default-avatar.png'} alt="alumni" className="w-8 h-8 rounded-full" />
+									<span className="font-semibold text-cyan-700">{conn.alumniName}</span>
+									<span className="text-gray-500">{conn.company}</span>
+								</li>
+							))}
+						</ul>
+					)}
+				</Modal>
+			)}
 			{/* Main Content */}
 			<div className="flex flex-1 w-full max-w-7xl mx-auto mt-6 gap-8 px-2 md:px-6">
 				{/* Filters */}
-				<aside className="hidden md:flex flex-col w-64 bg-white/80 rounded-2xl shadow-xl p-6 h-[calc(100vh-7rem)] sticky top-24 self-start border border-cyan-100 overflow-y-auto custom-scrollbar">
+				<aside className="hidden md:flex flex-col w-64 bg-white/80 rounded-2xl shadow-xl p-6 h-[650px] sticky top-24 self-start border border-cyan-100 overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 7rem)', minHeight: '300px' }}>
 					<h3 className="font-extrabold text-xl text-cyan-700 mb-4 flex items-center gap-2">
 						<span className="inline-block w-2 h-6 bg-cyan-400 rounded-full"></span>
 						Filter by Skills
@@ -265,9 +416,18 @@ const StudentDashboard = () => {
 								No alumni found.
 							</div>
 						) : (
-							filteredAlumni.map((alumni, i) => (
-								<AlumniCard key={i} alumni={alumni} />
-							))
+							filteredAlumni.map((alumni) => {
+								if (!alumni._id) return null; // skip if no id
+								return (
+									<AlumniCard
+										key={alumni._id}
+										alumni={alumni}
+										studentId={student?._id || ""}
+										connectionStatus={stages[alumni._id] || ""}
+										onRequestSent={(alumniId, status) => setStages(prev => ({ ...prev, [alumniId]: status }))}
+									/>
+								);
+							})
 						)}
 					</div>
 				</main>

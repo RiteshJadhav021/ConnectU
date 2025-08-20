@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -76,34 +77,83 @@ const Login = () => {
       if (response.ok) {
         // Save token to localStorage
         localStorage.setItem('token', data.token);
-        // Fetch latest user profile based on role
+        // Always fetch latest user profile (with _id) after login
         let userProfile = data.user;
-        if (data.user?.role === 'alumni') {
-          // Fetch alumni profile with image
-          const profileRes = await fetch('http://localhost:5000/api/alumni/me', {
-            headers: { Authorization: `Bearer ${data.token}` },
-          });
-          if (profileRes.ok) {
-            userProfile = await profileRes.json();
+        let fetchedProfile = null;
+        let userRes;
+        try {
+          if (userProfile?.role === 'alumni') {
+            userRes = await fetch('http://localhost:5000/api/alumni/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          } else if (userProfile?.role === 'student') {
+            userRes = await fetch('http://localhost:5000/api/student/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          } else if (userProfile?.role === 'teacher') {
+            userRes = await fetch('http://localhost:5000/api/teacher/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          } else if (userProfile?.role === 'tpo') {
+            userRes = await fetch('http://localhost:5000/api/tpo/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          }
+          if (userRes && userRes.ok) {
+            fetchedProfile = await userRes.json();
+            // Only use fetchedProfile if it has _id and role
+            if (fetchedProfile && fetchedProfile._id && fetchedProfile.role) {
+              userProfile = fetchedProfile;
+            }
+          }
+        } catch (e) { /* fallback to data.user */ }
+        // Defensive: If userProfile is missing _id, try to extract it from fetchedProfile or fallback to token decode
+        if (!userProfile._id) {
+          if (fetchedProfile && fetchedProfile._id) {
+            userProfile._id = fetchedProfile._id;
+          } else if (data.user && data.user._id) {
+            userProfile._id = data.user._id;
           }
         }
-        localStorage.setItem('user', JSON.stringify(userProfile));
-        // Redirect to dashboard based on user role
-        const role = userProfile?.role;
-        if (role === 'student') {
-          window.location.href = '/dashboard/student';
-        } else if (role === 'alumni') {
-          window.location.href = '/dashboard/alumni';
-        } else if (role === 'teacher') {
-          window.location.href = '/dashboard/teacher';
-        } else if (role === 'tpo') {
-          window.location.href = '/dashboard/tpo';
-        } else {
-          alert('Login successful!');
+        // Final fallback: If userProfile still has no _id, try to fetch all students and match by email
+        if (!userProfile._id && userProfile.email && userProfile.role === 'student') {
+          try {
+            const allStudentsRes = await fetch('http://localhost:5000/api/student/all', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+            if (allStudentsRes.ok) {
+              const allStudents = await allStudentsRes.json();
+              const found = allStudents.find(s => s.email === userProfile.email);
+              if (found && found._id) {
+                userProfile._id = found._id;
+              }
+            }
+          } catch (e) { /* ignore */ }
         }
+        // Debug: Log userProfile after all attempts
+        console.log('Final userProfile stored in localStorage:', userProfile);
+        localStorage.setItem('user', JSON.stringify(userProfile));
+        // Show toast before redirect
+        toast.success('Login successful!');
+        // Redirect to dashboard based on user role (defensive) after a short delay
+        const role = userProfile?.role;
+        setTimeout(() => {
+          if (role === 'student') {
+            window.location.href = '/dashboard/student';
+          } else if (role === 'alumni') {
+            window.location.href = '/dashboard/alumni';
+          } else if (role === 'teacher') {
+            window.location.href = '/dashboard/teacher';
+          } else if (role === 'tpo') {
+            window.location.href = '/dashboard/tpo';
+          } else {
+            toast.success('Login successful!');
+          }
+        }, 800); // 800ms delay for toast visibility
       } else {
         // Login failed
         setLoginError(data.error || 'Login failed');
+        toast.error(data.error || 'Login failed');
       }
     } catch (error) {
       setLoginError('An error occurred. Please try again.');

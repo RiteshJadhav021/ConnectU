@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useGsapSignupAnimation } from "./useGsapSignupAnimation";
 import gsap from "gsap";
+import { toast } from "react-toastify";
 
 const roles = [
   { value: "student", label: "Student" },
@@ -203,9 +204,35 @@ const Signup = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        // Save user and token to localStorage
+        // Always fetch user profile (with _id) after signup
+        let userProfile = data.user;
+        let userRes;
+        try {
+          if (role === 'alumni') {
+            userRes = await fetch('http://localhost:5000/api/alumni/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          } else if (role === 'student') {
+            userRes = await fetch('http://localhost:5000/api/student/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          } else if (role === 'teacher') {
+            userRes = await fetch('http://localhost:5000/api/teacher/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          } else if (role === 'tpo') {
+            userRes = await fetch('http://localhost:5000/api/tpo/me', {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+          }
+          if (userRes && userRes.ok) {
+            userProfile = await userRes.json();
+          }
+        } catch (e) { /* fallback to data.user */ }
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify(userProfile));
+        // Show toast before redirect
+        toast.success('Signup successful!');
         // Redirect to dashboard based on role
         if (role === "student") {
           window.location.href = "/dashboard/student";
@@ -216,10 +243,10 @@ const Signup = () => {
         } else if (role === "tpo") {
           window.location.href = "/dashboard/tpo";
         } else {
-          alert("Signup successful!");
+          toast.success("Signup successful!");
         }
       } else {
-        alert(data.error || "Signup failed");
+        toast.error(data.error || "Signup failed");
       }
     } catch (error) {
       alert("An error occurred. Please try again.");

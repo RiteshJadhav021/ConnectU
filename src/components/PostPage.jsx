@@ -64,7 +64,7 @@ const PostPage = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 flex flex-col gap-10">
+    <div className="max-w-3xl mx-auto mt-10 flex flex-col gap-10 relative">
       {posts.map(post => (
         <div key={post.id} className="p-6 bg-white rounded-xl shadow-md flex flex-col md:flex-row gap-6">
           <div className="flex-1 flex flex-col">
@@ -103,7 +103,8 @@ const PostPage = () => {
           </div>
           {/* Comments Section (right side) */}
           {post.showComments && (
-            <div className="w-full md:w-96 bg-white rounded-xl shadow-2xl p-4 flex flex-col border border-blue-200 animate-fadeIn">
+            <div className="fixed top-0 right-0 h-full w-full md:w-96 bg-white rounded-xl shadow-2xl p-4 flex flex-col border border-blue-200 z-50 animate-slideInRight">
+              <button className="self-end m-2 text-2xl text-gray-400 hover:text-red-500 font-bold" onClick={() => toggleComments(post.id)} aria-label="Close Comments">×</button>
               <h3 className="text-xl font-bold text-blue-700 mb-4 border-b pb-2 flex items-center gap-2">
                 <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
