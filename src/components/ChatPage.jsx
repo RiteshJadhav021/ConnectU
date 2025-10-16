@@ -167,15 +167,40 @@ const ChatPage = () => {
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-cyan-200 flex flex-col h-[80vh]">
         {/* Header */}
         <div className="flex items-center gap-4 p-4 border-b border-cyan-100 bg-gradient-to-r from-cyan-200 to-blue-200 rounded-t-2xl">
-          {alumni?.img ? (
-            <img src={alumni.img} alt={alumni.name} className="w-12 h-12 rounded-full object-cover border-2 border-cyan-400" />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-cyan-300 flex items-center justify-center text-white text-xl font-bold">{alumni?.name?.[0]}</div>
-          )}
-          <div>
-            <div className="font-bold text-lg text-cyan-800">{alumni?.name || "Alumni"}</div>
-            <div className="text-sm text-gray-500">{alumni?.company}</div>
-          </div>
+          {/* Dynamic profile display based on chat mode */}
+          {(() => {
+            const otherUser = isAlumniChatMode ? studentProfile : alumni;
+            const otherUserName = isAlumniChatMode ? (studentProfile?.name || "Student") : (alumni?.name || "Alumni");
+            const otherUserImg = isAlumniChatMode ? studentProfile?.img : alumni?.img;
+            const otherUserInfo = isAlumniChatMode ? (studentProfile?.course || "Student") : (alumni?.company || "Alumni");
+            
+            return (
+              <>
+                {otherUserImg ? (
+                  <img 
+                    src={otherUserImg} 
+                    alt={otherUserName} 
+                    className="w-12 h-12 rounded-full object-cover border-2 border-cyan-400"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xl font-bold border-2 border-cyan-400"
+                  style={{ display: otherUserImg ? 'none' : 'flex' }}
+                >
+                  {otherUserName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="font-bold text-lg text-cyan-800">{otherUserName}</div>
+                  <div className="text-sm text-gray-500">{otherUserInfo}</div>
+                </div>
+              </>
+            );
+          })()}
         </div>
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-white to-cyan-50">
@@ -185,10 +210,26 @@ const ChatPage = () => {
             <div className="text-center text-gray-400">No messages yet. Say hello!</div>
           ) : (
             Array.isArray(messages) && messages.map((msg, idx) => {
-              const isCurrentUser = msg.fromUser === studentId;
-              const senderProfile = isCurrentUser ? studentProfile : alumni;
-              const senderName = isCurrentUser ? (studentProfile?.name || currentUser?.name || "You") : (alumni?.name || "Alumni");
-              const senderImg = isCurrentUser ? studentProfile?.img : alumni?.img;
+              const isCurrentUser = msg.fromUser === currentUserId;
+              
+              // Determine sender info based on chat mode and message direction
+              let senderName, senderImg;
+              if (isCurrentUser) {
+                // Current user (me) - either alumni or student
+                senderName = currentUser?.name || "You";
+                senderImg = currentUser?.img;
+              } else {
+                // Other user - either student or alumni depending on chat mode
+                if (isAlumniChatMode) {
+                  // Alumni chatting with student, other user is student
+                  senderName = studentProfile?.name || "Student";
+                  senderImg = studentProfile?.img;
+                } else {
+                  // Student chatting with alumni, other user is alumni
+                  senderName = alumni?.name || "Alumni";
+                  senderImg = alumni?.img;
+                }
+              }
               
               return (
                 <div
