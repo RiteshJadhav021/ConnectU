@@ -70,7 +70,7 @@ const AlumniDashboard = () => {
     const fetchPosts = async () => {
       try {
         // Fetch all posts from TPO endpoint (returns all posts: Alumni + TPO)
-        const res = await fetch('`${API_BASE_URL}/tpo/posts', {
+        const res = await fetch(`${API_BASE_URL}/tpo/posts`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (res.ok) {
@@ -98,7 +98,7 @@ const AlumniDashboard = () => {
 
   // Fetch all alumni IDs on mount
   useEffect(() => {
-    fetch('`${API_BASE_URL}/alumni/all-ids')
+    fetch(`${API_BASE_URL}/alumni/all-ids`)
       .then(res => res.json())
       .then(ids => setAlumniIds(ids.map(id => id.toString())))
       .catch(() => setAlumniIds([]));
@@ -227,7 +227,7 @@ const AlumniDashboard = () => {
     // Send profile data to backend
     try {
       const token = localStorage.getItem('token');
-      await fetch('`${API_BASE_URL}/alumni/me', {
+      await fetch(`${API_BASE_URL}/alumni/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -312,7 +312,7 @@ const AlumniDashboard = () => {
     if (postImage) formData.append('image', postImage); // Send the file, not the URL
 
     try {
-      const res = await fetch('`${API_BASE_URL}/alumni/posts', {
+      const res = await fetch(`${API_BASE_URL}/alumni/posts`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -321,7 +321,7 @@ const AlumniDashboard = () => {
       });
       if (res.ok) {
         // Fetch all posts again from TPO endpoint to show all posts
-        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
+        const postsRes = await fetch(`${API_BASE_URL}/tpo/posts`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (postsRes.ok) {
