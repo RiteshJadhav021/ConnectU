@@ -7,6 +7,7 @@ import AlumniPostFeed from "./AlumniPostFeed";
 import { FaUserCircle, FaRegCommentDots, FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Modal from "./Modal"; // (Assume a simple Modal component exists or will be created)
+import { API_BASE_URL } from "../config";
 
 const companies = ["Google", "Microsoft", "Amazon", "TCS", "Infosys","Wipro","Accenture","Cognizant","HCL","IBM"];
 
@@ -93,7 +94,7 @@ const StudentDashboard = () => {
 
 	// Fetch alumni list from backend
 	useEffect(() => {
-		fetch('http://localhost:5000/api/alumni')
+		fetch(`${API_BASE_URL}/alumni`)
 			.then(res => res.json())
 			.then(data => {
 				setAlumniList(data);
@@ -112,7 +113,7 @@ const StudentDashboard = () => {
 	// Sync stages with backend connection requests
 	useEffect(() => {
   if (!student?._id) return;
-  fetch(`http://localhost:5000/api/connections/requested/${student._id}`)
+  fetch(`${API_BASE_URL}/connections/requested/${student._id}`)
     .then(res => res.json())
     .then(data => {
       // data should be an array of { alumniId, status }
@@ -130,7 +131,7 @@ const StudentDashboard = () => {
 	useEffect(() => {
 		if (!student?._id) return;
 		const fetchNotifications = () => {
-			fetch(`http://localhost:5000/api/connections/notifications/student/${student._id}`)
+			fetch(`${API_BASE_URL}/connections/notifications/student/${student._id}`)
 				.then(res => res.json())
 				.then(data => setConnectionNotifications(data || []))
 				.catch(() => setConnectionNotifications([]));
@@ -143,7 +144,7 @@ const StudentDashboard = () => {
 	// Fetch my accepted connections
 	const fetchMyConnections = () => {
 		if (!student?._id) return;
-		fetch(`http://localhost:5000/api/connections/my/${student._id}`)
+		fetch(`${API_BASE_URL}/connections/my/${student._id}`)
 			.then(res => res.json())
 			.then(data => setMyConnections(data || []))
 			.catch(() => setMyConnections([]));
@@ -152,7 +153,7 @@ const StudentDashboard = () => {
 	// Mark notifications as seen
 	const markNotificationsSeen = () => {
 		if (!student?._id) return;
-		fetch(`http://localhost:5000/api/connections/notifications/student/${student._id}/seen`, { method: "POST" })
+		fetch(`${API_BASE_URL}/connections/notifications/student/${student._id}/seen`, { method: "POST" })
 		.then(() => setConnectionNotifications((prev) => prev.map(n => ({ ...n, seen: true }))))		.catch(() => {});
 	};
 
@@ -197,7 +198,7 @@ const StudentDashboard = () => {
     return updated;
   });
   try {
-    const res = await fetch('http://localhost:5000/api/connections/request', {
+    const res = await fetch(`${API_BASE_URL}/connections/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fromStudent: student._id, toAlumni: alumniId }),

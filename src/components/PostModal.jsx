@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from "../config";
 
 const PostModal = ({ show, onClose, onPost }) => {
   const [content, setContent] = useState('');
@@ -31,7 +32,7 @@ const PostModal = ({ show, onClose, onPost }) => {
       const formData = new FormData();
       formData.append('content', content);
       if (image) formData.append('image', image);
-      const res = await fetch('http://localhost:5000/api/alumni/posts', {
+      const res = await fetch('`${API_BASE_URL}/alumni/posts', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config";
 
 const AlumniPostFeed = () => {
   const [posts, setPosts] = useState([]);
@@ -14,7 +15,7 @@ const AlumniPostFeed = () => {
     const fetchPosts = async () => {
       try {
         // Fetch all posts (Alumni + TPO) from the TPO endpoint which returns all posts
-        const res = await fetch("http://localhost:5000/api/tpo/posts", {
+        const res = await fetch(`${API_BASE_URL}/tpo/posts`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         if (res.ok) {
@@ -41,7 +42,7 @@ const AlumniPostFeed = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/tpo/posts/${postId}/like`, {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts/${postId}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: student.email || student._id || student.id })
@@ -60,7 +61,7 @@ const AlumniPostFeed = () => {
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/tpo/posts/${activeCommentPost}/comment`, {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts/${activeCommentPost}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

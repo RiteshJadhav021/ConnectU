@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from "../config";
 
 const PostFeed = () => {
   const [posts, setPosts] = useState([]);
@@ -13,7 +14,7 @@ const PostFeed = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/tpo/posts", {
+        const res = await fetch(`${API_BASE_URL}/tpo/posts`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         if (res.ok) {
@@ -39,7 +40,7 @@ const PostFeed = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/tpo/posts/${postId}/like`, {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts/${postId}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.email || user._id || user.id })
@@ -58,7 +59,7 @@ const PostFeed = () => {
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/tpo/posts/${activeCommentPost}/comment`, {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts/${activeCommentPost}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

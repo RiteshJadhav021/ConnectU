@@ -3,6 +3,7 @@ import { FaUserCircle, FaTrash, FaBell, FaEnvelope } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./Modal";
 import { useNavigate, useLocation } from "react-router-dom";
+import { API_BASE_URL } from "../config";
 
 const TPODashboard = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -38,7 +39,7 @@ const TPODashboard = () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const res = await fetch('http://localhost:5000/api/tpo/me', {
+          const res = await fetch('`${API_BASE_URL}/tpo/me', {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -62,7 +63,7 @@ const TPODashboard = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/tpo/posts', {
+        const res = await fetch('`${API_BASE_URL}/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (res.ok) {
@@ -137,7 +138,7 @@ const TPODashboard = () => {
     // Send profile data to backend
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:5000/api/tpo/me', {
+      await fetch('`${API_BASE_URL}/tpo/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +169,7 @@ const TPODashboard = () => {
     formData.append("photo", file);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/tpo/me/photo", {
+      const res = await fetch(`${API_BASE_URL}/tpo/me/photo`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -215,7 +216,7 @@ const TPODashboard = () => {
     formData.append('content', postDescription);
     if (postImage) formData.append('image', postImage);
     try {
-      const res = await fetch('http://localhost:5000/api/tpo/posts', {
+      const res = await fetch('`${API_BASE_URL}/tpo/posts', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -223,7 +224,7 @@ const TPODashboard = () => {
         body: formData,
       });
       if (res.ok) {
-        const postsRes = await fetch('http://localhost:5000/api/tpo/posts', {
+        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (postsRes.ok) {
@@ -269,7 +270,7 @@ const TPODashboard = () => {
             onClick={async () => {
               toast.dismiss();
               try {
-                const res = await fetch(`http://localhost:5000/api/tpo/posts/${postId}`,
+                const res = await fetch(`${API_BASE_URL}/tpo/posts/${postId}`,
                   {
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -307,7 +308,7 @@ const TPODashboard = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/tpo/posts/${postId}/like`, {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts/${postId}/like`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -317,7 +318,7 @@ const TPODashboard = () => {
       });
       if (res.ok) {
         // Refetch posts to update UI
-        const postsRes = await fetch('http://localhost:5000/api/tpo/posts', {
+        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (postsRes.ok) {
@@ -336,7 +337,7 @@ const TPODashboard = () => {
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/tpo/posts/${activeCommentPost}/comment`, {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts/${activeCommentPost}/comment`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -350,7 +351,7 @@ const TPODashboard = () => {
       });
       if (res.ok) {
         // Refetch posts to update UI
-        const postsRes = await fetch('http://localhost:5000/api/tpo/posts', {
+        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (postsRes.ok) {

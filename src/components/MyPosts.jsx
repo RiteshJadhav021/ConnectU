@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { API_BASE_URL } from "../config";
 
 const MyPosts = () => {
   const [posts, setPosts] = useState([]);
@@ -18,7 +19,7 @@ const MyPosts = () => {
     // Fetch all posts
     const fetchPosts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/alumni/posts", {
+        const res = await fetch(`${API_BASE_URL}/alumni/posts`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         if (res.ok) {
@@ -51,7 +52,7 @@ const MyPosts = () => {
               toast.dismiss();
               try {
                 const res = await fetch(
-                  `http://localhost:5000/api/alumni/posts/${postId}`,
+                  `${API_BASE_URL}/alumni/posts/${postId}`,
                   {
                     method: "DELETE",
                     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },

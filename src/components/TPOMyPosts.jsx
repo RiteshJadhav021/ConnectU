@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config";
 
 const TPOMyPosts = () => {
   const [posts, setPosts] = useState([]);
@@ -11,7 +12,7 @@ const TPOMyPosts = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/tpo/posts', {
+        const res = await fetch('`${API_BASE_URL}/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (res.ok) {
@@ -43,7 +44,7 @@ const TPOMyPosts = () => {
             onClick={async () => {
               toast.dismiss();
               try {
-                const res = await fetch(`http://localhost:5000/api/tpo/posts/${postId}`, {
+                const res = await fetch(`${API_BASE_URL}/tpo/posts/${postId}`, {
                   method: 'DELETE',
                   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                 });

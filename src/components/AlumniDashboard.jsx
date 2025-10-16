@@ -3,6 +3,7 @@ import { FaUserCircle, FaTrash, FaBell, FaEnvelope } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Modal from "./Modal";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config";
 
 const AlumniDashboard = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -44,7 +45,7 @@ const AlumniDashboard = () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const res = await fetch('http://localhost:5000/api/alumni/me', {
+          const res = await fetch(`${API_BASE_URL}/alumni/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -69,7 +70,7 @@ const AlumniDashboard = () => {
     const fetchPosts = async () => {
       try {
         // Fetch all posts from TPO endpoint (returns all posts: Alumni + TPO)
-        const res = await fetch('http://localhost:5000/api/tpo/posts', {
+        const res = await fetch('`${API_BASE_URL}/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (res.ok) {
@@ -86,7 +87,7 @@ const AlumniDashboard = () => {
   // Fetch pending connection requests for this alumni
   useEffect(() => {
     if (!profile?._id) return;
-    fetch(`http://localhost:5000/api/connections/received/${profile._id}`)
+    fetch(`${API_BASE_URL}/connections/received/${profile._id}`)
       .then(res => res.json())
       .then(data => {
         setPendingRequests(data || []);
@@ -97,7 +98,7 @@ const AlumniDashboard = () => {
 
   // Fetch all alumni IDs on mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/alumni/all-ids')
+    fetch('`${API_BASE_URL}/alumni/all-ids')
       .then(res => res.json())
       .then(ids => setAlumniIds(ids.map(id => id.toString())))
       .catch(() => setAlumniIds([]));
@@ -107,7 +108,7 @@ const AlumniDashboard = () => {
   useEffect(() => {
     if (!profile?._id || !alumniIds) return;
     setLoadingConversations(true);
-    fetch(`http://localhost:5000/api/messages/alumni/${profile._id}`)
+    fetch(`${API_BASE_URL}/messages/alumni/${profile._id}`)
       .then(res => res.json())
       .then(async data => {
         // Group messages by studentId using fromUser/toUser
@@ -132,7 +133,7 @@ const AlumniDashboard = () => {
         // Fetch student details for each studentId (force ObjectId string)
         const detailsPromises = convs.map(async conv => {
           try {
-            const res = await fetch(`http://localhost:5000/api/students/${conv.studentId}`);
+            const res = await fetch(`${API_BASE_URL}/students/${conv.studentId}`);
             if (res.ok) {
               const student = await res.json();
               return {
@@ -226,7 +227,7 @@ const AlumniDashboard = () => {
     // Send profile data to backend
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:5000/api/alumni/me', {
+      await fetch('`${API_BASE_URL}/alumni/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -258,7 +259,7 @@ const AlumniDashboard = () => {
     formData.append("photo", file);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/alumni/me/photo", {
+      const res = await fetch(`${API_BASE_URL}/alumni/me/photo`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -311,7 +312,7 @@ const AlumniDashboard = () => {
     if (postImage) formData.append('image', postImage); // Send the file, not the URL
 
     try {
-      const res = await fetch('http://localhost:5000/api/alumni/posts', {
+      const res = await fetch('`${API_BASE_URL}/alumni/posts', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -320,7 +321,7 @@ const AlumniDashboard = () => {
       });
       if (res.ok) {
         // Fetch all posts again from TPO endpoint to show all posts
-        const postsRes = await fetch('http://localhost:5000/api/tpo/posts', {
+        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (postsRes.ok) {
@@ -375,7 +376,7 @@ const AlumniDashboard = () => {
             onClick={async () => {
               toast.dismiss();
               try {
-                const res = await fetch(`http://localhost:5000/api/alumni/posts/${postId}`, {
+                const res = await fetch(`${API_BASE_URL}/alumni/posts/${postId}`, {
                   method: 'DELETE',
                   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                 });
@@ -412,7 +413,7 @@ const AlumniDashboard = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/alumni/posts/${postId}/like`, {
+      const res = await fetch(`${API_BASE_URL}/alumni/posts/${postId}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: alumni.email || alumni._id || alumni.id })
@@ -437,7 +438,7 @@ const AlumniDashboard = () => {
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/alumni/posts/${activeCommentPost}/comment`, {
+      const res = await fetch(`${API_BASE_URL}/alumni/posts/${activeCommentPost}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -460,14 +461,14 @@ const AlumniDashboard = () => {
   // Mark requests as seen
   const markRequestsSeen = () => {
     if (!profile?._id) return;
-    fetch(`http://localhost:5000/api/connections/notifications/alumni/${profile._id}/seen`, { method: "POST" })
+    fetch(`${API_BASE_URL}/connections/notifications/alumni/${profile._id}/seen`, { method: "POST" })
       .then(() => setHasUnseenRequests(false))
       .catch(() => {});
   };
 
   // Accept/Reject request
   const handleRespond = (requestId, action) => {
-    fetch(`http://localhost:5000/api/connections/respond`, {
+    fetch(`${API_BASE_URL}/connections/respond`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId, action }),
