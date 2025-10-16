@@ -27,7 +27,7 @@ const ChatPage = () => {
   const token = localStorage.getItem("token");
 
   // Unique room for student-alumni pair
-  const roomId = studentId && alumniId ? [studentId, alumniId].sort().join("-") : null;
+  const roomId = currentUserId && otherUserId ? [currentUserId, otherUserId].sort().join("-") : null;
 
   // Fetch other user info based on chat mode
   useEffect(() => {
@@ -101,14 +101,21 @@ const ChatPage = () => {
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-    // Debug: log IDs
-    console.log('studentId:', studentId, 'alumniId:', alumniId);
+    
     // Validate MongoDB ObjectId (24 hex chars)
     const isValidObjectId = (id) => typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
-    if (!isValidObjectId(studentId) || !isValidObjectId(alumniId)) {
-      alert("Invalid user ID(s). Cannot send message.");
+    
+    // Validate current user and target user
+    if (!isValidObjectId(currentUserId)) {
+      alert("Invalid current user. Please login again.");
       return;
     }
+    
+    if (!isValidObjectId(otherUserId)) {
+      alert("Invalid chat target. Please try again.");
+      return;
+    }
+    
     // Determine correct fromUser and toUser based on chat mode
     let fromUser, toUser;
     if (isAlumniChatMode) {
