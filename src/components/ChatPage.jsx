@@ -3,21 +3,26 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Modal from "./Modal";
 import { socket } from "../socket";
 import ChatHistory from './ChatHistory';
+import { API_BASE_URL } from "../config";
 
 const ChatPage = () => {
-  const { alumniId } = useParams();
+  const { alumniId, studentId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Determine if this is alumni chatting with student or student chatting with alumni
+  const isAlumniChatMode = location.pathname.includes('/alumni-chat/');
+  const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  const currentUserId = currentUser?._id;
+  const otherUserId = isAlumniChatMode ? studentId : alumniId;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [alumni, setAlumni] = useState(null);
+  const [studentProfile, setStudentProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Assume student info is in localStorage
-  const student = JSON.parse(localStorage.getItem("user") || "null");
-  const studentId = student?._id;
   // Get token from localStorage
   const token = localStorage.getItem("token");
 
@@ -26,16 +31,25 @@ const ChatPage = () => {
 
   // Fetch alumni info
   useEffect(() => {
-    fetch(`/api/alumni/${alumniId}`)
+    fetch(`${API_BASE_URL}/alumni/${alumniId}`)
       .then(res => res.json())
       .then(setAlumni)
       .catch(() => setAlumni(null));
   }, [alumniId]);
 
+  // Fetch student profile for displaying profile info of the sender
+  useEffect(() => {
+    if (!studentId) return;
+    fetch(`${API_BASE_URL}/students/${studentId}`)
+      .then(res => res.json())
+      .then(setStudentProfile)
+      .catch(() => setStudentProfile(null));
+  }, [studentId]);
+
   // Fetch messages (initial load)
   useEffect(() => {
     if (!studentId || !alumniId) return;
-    fetch(`/api/messages/conversation/${studentId}/${alumniId}`,
+    fetch(`${API_BASE_URL}/messages/conversation/${studentId}/${alumniId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
       .then(res => res.ok ? res.json() : [])
@@ -93,7 +107,7 @@ const ChatPage = () => {
     setInput("");
     try {
       // Save to backend first
-      const res = await fetch("/api/messages/send", {
+      const res = await fetch(`${API_BASE_URL}/messages/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(msg),
@@ -142,25 +156,63 @@ const ChatPage = () => {
           ) : Array.isArray(messages) && messages.length === 0 ? (
             <div className="text-center text-gray-400">No messages yet. Say hello!</div>
           ) : (
-            Array.isArray(messages) && messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${msg.fromUser === studentId ? "justify-end" : "justify-start"}`}
-              >
+            Array.isArray(messages) && messages.map((msg, idx) => {
+              const isCurrentUser = msg.fromUser === studentId;
+              const senderProfile = isCurrentUser ? studentProfile : alumni;
+              const senderName = isCurrentUser ? (studentProfile?.name || currentUser?.name || "You") : (alumni?.name || "Alumni");
+              const senderImg = isCurrentUser ? studentProfile?.img : alumni?.img;
+              
+              return (
                 <div
-                  className={`max-w-xs px-4 py-2 rounded-2xl shadow text-sm ${
-                    msg.fromUser === studentId
-                      ? "bg-cyan-500 text-white rounded-br-none"
-                      : "bg-gray-200 text-gray-800 rounded-bl-none"
-                  }`}
+                  key={idx}
+                  className={`flex items-end gap-2 ${isCurrentUser ? "justify-end flex-row-reverse" : "justify-start"}`}
                 >
-                  {msg.content}
-                  <div className="text-[10px] text-right text-gray-300 mt-1">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {/* Profile Photo */}
+                  <div className="flex-shrink-0">
+                    {senderImg ? (
+                      <img
+                        src={senderImg}
+                        alt={senderName}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-cyan-300"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold border-2 border-cyan-300"
+                      style={{ display: senderImg ? 'none' : 'flex' }}
+                    >
+                      {senderName.charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+                  
+                  {/* Message Bubble */}
+                  <div className="flex flex-col max-w-xs">
+                    {/* Sender Name */}
+                    <div className={`text-xs text-gray-500 mb-1 ${isCurrentUser ? "text-right" : "text-left"}`}>
+                      {senderName}
+                    </div>
+                    
+                    {/* Message Content */}
+                    <div
+                      className={`px-4 py-2 rounded-2xl shadow text-sm ${
+                        isCurrentUser
+                          ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-br-md"
+                          : "bg-white text-gray-800 rounded-bl-md border border-gray-200"
+                      }`}
+                    >
+                      {msg.content}
+                      <div className={`text-[10px] mt-1 ${isCurrentUser ? "text-cyan-100" : "text-gray-400"} text-right`}>
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>

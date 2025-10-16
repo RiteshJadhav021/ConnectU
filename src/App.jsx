@@ -60,6 +60,7 @@ function App() {
         <Route path="/tpo-posts" element={<><TPOMyPosts /><Footer /></>} />
         <Route path="/alumni-posts" element={<><AlumniPostFeed /></>} />
         <Route path="/chat/:alumniId" element={<ChatPage />} />
+        <Route path="/alumni-chat/:studentId" element={<ChatPage />} />
       </Routes>
       <ToastContainer />
     </>

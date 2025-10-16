@@ -807,7 +807,7 @@ const AlumniDashboard = () => {
                       </div>
                       <button
                         className="ml-auto bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1 rounded-full text-xs font-semibold transition"
-                        onClick={() => navigate(`/chat/${conv.studentId}`)}
+                        onClick={() => navigate(`/alumni-chat/${conv.studentId}`)}
                       >
                         Open
                       </button>
