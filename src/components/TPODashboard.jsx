@@ -393,6 +393,16 @@ const TPODashboard = () => {
           <div className="flex-1 flex justify-center"></div>
           <div className="flex-1 flex justify-end items-center gap-4">
             <button
+              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-full shadow transition flex items-center gap-2"
+              onClick={() => window.location.href = '/alumni-posts'}
+              aria-label="Posts Feed"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h3l2-2h4l2 2h3a2 2 0 012 2v12a2 2 0 01-2 2z" />
+              </svg>
+              Posts
+            </button>
+            <button
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow transition duration-200 text-base"
               onClick={() => setShowPostModal(true)}
               style={{ minWidth: 100 }}

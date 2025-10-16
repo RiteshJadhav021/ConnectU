@@ -13,14 +13,23 @@ const AlumniPostFeed = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/alumni/posts", {
+        // Fetch all posts (Alumni + TPO) from the TPO endpoint which returns all posts
+        const res = await fetch("http://localhost:5000/api/tpo/posts", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         if (res.ok) {
           const data = await res.json();
-          setPosts(data);
+          // Sort posts by createdAt descending (newest first)
+          const sortedPosts = [...data].sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA;
+          });
+          setPosts(sortedPosts);
         }
-      } catch {}
+      } catch (err) {
+        console.error("Failed to fetch posts:", err);
+      }
       setLoading(false);
     };
     fetchPosts();
@@ -32,7 +41,7 @@ const AlumniPostFeed = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/alumni/posts/${postId}/like`, {
+      const res = await fetch(`http://localhost:5000/api/tpo/posts/${postId}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: student.email || student._id || student.id })
@@ -51,7 +60,7 @@ const AlumniPostFeed = () => {
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/alumni/posts/${activeCommentPost}/comment`, {
+      const res = await fetch(`http://localhost:5000/api/tpo/posts/${activeCommentPost}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,7 +88,13 @@ const AlumniPostFeed = () => {
       {posts.map((post, idx) => (
         <div key={post._id || idx} className="bg-white rounded-2xl shadow p-6 border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
-            <span className="font-semibold text-indigo-700">Alumni: {post.author && post.author.name ? post.author.name : 'Unknown'}</span>
+            <span className="font-semibold text-indigo-700">
+              {post.authorModel === 'Alumni' 
+                ? `Alumni: ${post.author && post.author.name ? post.author.name : 'Unknown Alumni'}`
+                : post.authorModel === 'TPO' 
+                  ? `TPO: ${post.author && post.author.name ? post.author.name : 'TPO'}`
+                  : 'Unknown'}
+            </span>
             <span className="text-gray-400 text-xs">{post.createdAt ? post.createdAt.slice(0, 10) : ''}</span>
           </div>
           <div className="mb-2 text-gray-800">{post.content}</div>

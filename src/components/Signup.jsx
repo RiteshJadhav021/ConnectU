@@ -26,6 +26,23 @@ const Signup = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [roleError, setRoleError] = useState("");
+  
+  // OTP-related states
+  const [showOtpForm, setShowOtpForm] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Form data state for OTP process
+  const [formData, setFormData] = useState({
+    role: "",
+    name: "",
+    email: "",
+    prn: "",
+    passout: "",
+    password: ""
+  });
   const [showPassword, setShowPassword] = useState(false);
 
   const { formRef, imageRef, buttonRef, inputRefs, errorRefs, selectRef } = useGsapSignupAnimation();
@@ -194,62 +211,95 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    
     try {
-      // Convert name to uppercase before sending to backend
-      const formToSend = { ...form, name: form.name.trim().toUpperCase() };
-      const response = await fetch("http://localhost:5000/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formToSend, role }),
+      setLoading(true);
+      
+      // Store form data for OTP verification
+      const currentFormData = {
+        role,
+        name: form.name.trim().toUpperCase(),
+        email: form.email,
+        prn: form.prn,
+        passout: form.passout,
+        password: form.password
+      };
+      setFormData(currentFormData);
+
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentFormData)
       });
+
       const data = await response.json();
       if (response.ok) {
-        // Always fetch user profile (with _id) after signup
-        let userProfile = data.user;
-        let userRes;
-        try {
-          if (role === 'alumni') {
-            userRes = await fetch('http://localhost:5000/api/alumni/me', {
-              headers: { Authorization: `Bearer ${data.token}` },
-            });
-          } else if (role === 'student') {
-            userRes = await fetch('http://localhost:5000/api/student/me', {
-              headers: { Authorization: `Bearer ${data.token}` },
-            });
-          } else if (role === 'teacher') {
-            userRes = await fetch('http://localhost:5000/api/teacher/me', {
-              headers: { Authorization: `Bearer ${data.token}` },
-            });
-          } else if (role === 'tpo') {
-            userRes = await fetch('http://localhost:5000/api/tpo/me', {
-              headers: { Authorization: `Bearer ${data.token}` },
-            });
-          }
-          if (userRes && userRes.ok) {
-            userProfile = await userRes.json();
-          }
-        } catch (e) { /* fallback to data.user */ }
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(userProfile));
-        // Show toast before redirect
-        toast.success('Signup successful!');
-        // Redirect to dashboard based on role
-        if (role === "student") {
-          window.location.href = "/dashboard/student";
-        } else if (role === "alumni") {
-          window.location.href = "/dashboard/alumni";
-        } else if (role === "teacher") {
-          window.location.href = "/dashboard/teacher";
-        } else if (role === "tpo") {
-          window.location.href = "/dashboard/tpo";
-        } else {
-          toast.success("Signup successful!");
-        }
+        setShowOtpForm(true);
+        setOtpError('');
+        toast.success('OTP sent to your email! Please check and verify.');
       } else {
-        toast.error(data.error || "Signup failed");
+        setOtpError(data.error || 'Failed to send OTP. Please try again.');
+        toast.error(data.error || "Failed to send OTP");
       }
     } catch (error) {
-      alert("An error occurred. Please try again.");
+      setOtpError("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    if (!otpCode.trim()) {
+      setOtpError("Please enter the OTP");
+      return;
+    }
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      setOtpError("OTP must be 6 digits");
+      return;
+    }
+    
+    setOtpLoading(true);
+    setOtpError("");
+    
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          otp: otpCode.trim() 
+        }),
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store token and user data
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        toast.success('Registration completed successfully!');
+        
+        // Redirect to appropriate dashboard
+        setTimeout(() => {
+          if (formData.role === "student") {
+            window.location.href = "/dashboard/student";
+          } else if (formData.role === "alumni") {
+            window.location.href = "/dashboard/alumni";
+          } else if (formData.role === "teacher") {
+            window.location.href = "/dashboard/teacher";
+          } else if (formData.role === "tpo") {
+            window.location.href = "/dashboard/tpo";
+          }
+        }, 1000);
+      } else {
+        setOtpError(data.error || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      setOtpError("Verification failed. Please try again.");
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -299,7 +349,8 @@ const Signup = () => {
               >U</span>
             </span>
           </p>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {!showOtpForm ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-gray-700 font-semibold mb-2 text-lg">
                 Role
@@ -456,14 +507,59 @@ const Signup = () => {
                 </p>
               )}
             </div>
+            
             <button
               ref={buttonRef}
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-lg tracking-wide mt-2"
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-lg tracking-wide mt-2 disabled:opacity-50"
             >
-              Sign Up
+              {loading ? 'Sending OTP...' : 'Send OTP'}
             </button>
           </form>
+          ) : (
+            <form onSubmit={handleOtpSubmit} className="space-y-6">
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 text-lg">
+                  Enter OTP
+                </label>
+                <p className="text-sm text-gray-600 mb-3">
+                  We've sent a 6-digit OTP to {formData.email}
+                </p>
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-2xl tracking-widest"
+                  required
+                />
+              </div>
+              
+              {otpError && (
+                <div className="text-red-600 text-sm font-semibold">
+                  {otpError}
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={otpLoading || otpCode.length !== 6}
+                className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300 hover:from-green-600 hover:to-blue-700 disabled:opacity-50"
+              >
+                {otpLoading ? 'Verifying...' : 'Verify OTP'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setShowOtpForm(false)}
+                className="w-full text-gray-600 font-medium py-2 hover:text-gray-800 transition duration-300"
+              >
+                Back to Signup Form
+              </button>
+            </form>
+          )}
           <p className="mt-8 text-center text-gray-700 text-base">
             Already have an account?{" "}
             <Link
