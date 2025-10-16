@@ -29,34 +29,45 @@ const ChatPage = () => {
   // Unique room for student-alumni pair
   const roomId = studentId && alumniId ? [studentId, alumniId].sort().join("-") : null;
 
-  // Fetch alumni info
+  // Fetch other user info based on chat mode
   useEffect(() => {
-    fetch(`${API_BASE_URL}/alumni/${alumniId}`)
-      .then(res => res.json())
-      .then(setAlumni)
-      .catch(() => setAlumni(null));
-  }, [alumniId]);
-
-  // Fetch student profile for displaying profile info of the sender
-  useEffect(() => {
-    if (!studentId) return;
-    fetch(`${API_BASE_URL}/students/${studentId}`)
-      .then(res => res.json())
-      .then(setStudentProfile)
-      .catch(() => setStudentProfile(null));
-  }, [studentId]);
+    if (isAlumniChatMode && studentId) {
+      // Alumni chatting with student - fetch student info
+      fetch(`${API_BASE_URL}/students/${studentId}`)
+        .then(res => res.json())
+        .then(setStudentProfile)
+        .catch(() => setStudentProfile(null));
+    } else if (!isAlumniChatMode && alumniId) {
+      // Student chatting with alumni - fetch alumni info
+      fetch(`${API_BASE_URL}/alumni/${alumniId}`)
+        .then(res => res.json())
+        .then(setAlumni)
+        .catch(() => setAlumni(null));
+    }
+  }, [isAlumniChatMode, studentId, alumniId]);
 
   // Fetch messages (initial load)
   useEffect(() => {
-    if (!studentId || !alumniId) return;
-    fetch(`${API_BASE_URL}/messages/conversation/${studentId}/${alumniId}`,
+    if (!currentUserId || !otherUserId) return;
+    
+    // Determine the correct studentId and alumniId for the API call
+    let apiStudentId, apiAlumniId;
+    if (isAlumniChatMode) {
+      apiStudentId = studentId;
+      apiAlumniId = currentUserId;
+    } else {
+      apiStudentId = currentUserId;
+      apiAlumniId = alumniId;
+    }
+    
+    fetch(`${API_BASE_URL}/messages/conversation/${apiStudentId}/${apiAlumniId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
       .then(res => res.ok ? res.json() : [])
       .then(data => setMessages(Array.isArray(data) ? data : []))
       .catch(() => setMessages([]))
       .finally(() => setLoading(false));
-  }, [studentId, alumniId, token]);
+  }, [currentUserId, otherUserId, isAlumniChatMode, studentId, alumniId, token]);
 
   // Socket.io: join room and listen for messages
   useEffect(() => {
@@ -98,9 +109,19 @@ const ChatPage = () => {
       alert("Invalid user ID(s). Cannot send message.");
       return;
     }
+    // Determine correct fromUser and toUser based on chat mode
+    let fromUser, toUser;
+    if (isAlumniChatMode) {
+      fromUser = currentUserId; // Alumni
+      toUser = studentId; // Student
+    } else {
+      fromUser = currentUserId; // Student
+      toUser = alumniId; // Alumni
+    }
+    
     const msg = {
-      fromUser: studentId,
-      toUser: alumniId,
+      fromUser,
+      toUser,
       content: input.trim(),
       timestamp: new Date().toISOString(),
     };
@@ -128,10 +149,17 @@ const ChatPage = () => {
     }
   };
 
-  // Defensive: check for valid IDs
+  // Defensive: check for valid IDs based on chat mode
   const isValidObjectId = (id) => typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
-  if (!isValidObjectId(studentId) || !isValidObjectId(alumniId)) {
-    return <div className="text-red-500 text-center mt-10">Invalid user or alumni. Please login again.</div>;
+  
+  // Validate current user ID
+  if (!isValidObjectId(currentUserId)) {
+    return <div className="text-red-500 text-center mt-10">Invalid user session. Please login again.</div>;
+  }
+  
+  // Validate other user ID based on chat mode
+  if (!isValidObjectId(otherUserId)) {
+    return <div className="text-red-500 text-center mt-10">Invalid chat target. Please try again.</div>;
   }
 
   return (
