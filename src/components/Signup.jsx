@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useGsapSignupAnimation } from "./useGsapSignupAnimation";
 import gsap from "gsap";
 import { toast } from "react-toastify";
+import { API_BASE_URL } from "../config";
 
 const roles = [
   { value: "student", label: "Student" },
@@ -226,7 +227,7 @@ const Signup = () => {
       };
       setFormData(currentFormData);
 
-      const response = await fetch('http://localhost:5000/api/auth/signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentFormData)
@@ -264,7 +265,7 @@ const Signup = () => {
     setOtpError("");
     
     try {
-      const response = await fetch("http://localhost:5000/api/auth/verify-otp", {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

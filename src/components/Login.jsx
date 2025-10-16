@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { toast } from "react-toastify";
+import { API_BASE_URL } from "../config";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -68,7 +69,7 @@ const Login = () => {
     e.preventDefault();
     setLoginError("");
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -83,19 +84,19 @@ const Login = () => {
         let userRes;
         try {
           if (userProfile?.role === 'alumni') {
-            userRes = await fetch('http://localhost:5000/api/alumni/me', {
+            userRes = await fetch(`${API_BASE_URL}/alumni/me`, {
               headers: { Authorization: `Bearer ${data.token}` },
             });
           } else if (userProfile?.role === 'student') {
-            userRes = await fetch('http://localhost:5000/api/student/me', {
+            userRes = await fetch(`${API_BASE_URL}/student/me`, {
               headers: { Authorization: `Bearer ${data.token}` },
             });
           } else if (userProfile?.role === 'teacher') {
-            userRes = await fetch('http://localhost:5000/api/teacher/me', {
+            userRes = await fetch(`${API_BASE_URL}/teacher/me`, {
               headers: { Authorization: `Bearer ${data.token}` },
             });
           } else if (userProfile?.role === 'tpo') {
-            userRes = await fetch('http://localhost:5000/api/tpo/me', {
+            userRes = await fetch(`${API_BASE_URL}/tpo/me`, {
               headers: { Authorization: `Bearer ${data.token}` },
             });
           }
@@ -118,7 +119,7 @@ const Login = () => {
         // Final fallback: If userProfile still has no _id, try to fetch all students and match by email
         if (!userProfile._id && userProfile.email && userProfile.role === 'student') {
           try {
-            const allStudentsRes = await fetch('http://localhost:5000/api/student/all', {
+            const allStudentsRes = await fetch(`${API_BASE_URL}/student/all`, {
               headers: { Authorization: `Bearer ${data.token}` },
             });
             if (allStudentsRes.ok) {
