@@ -4,38 +4,13 @@ import AlumniCard from "./AlumniCard";
 import StudentProfileMenu from "./StudentProfileMenu";
 import QnASection from './QnASection';
 import AlumniPostFeed from "./AlumniPostFeed";
-import { FaUserCircle, FaRegCommentDots, FaBell } from "react-icons/fa";
+import { FaUserCircle, FaRegCommentDots } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Modal from "./Modal"; // (Assume a simple Modal component exists or will be created)
 import { API_BASE_URL } from "../config";
 
 // Companies will be derived dynamically from alumni data
 const defaultCompanies = [];
-
-// Sample upcoming events data
-const upcomingEvents = [
-  {
-    title: "Alumni Networking Night",
-    date: "2025-07-10",
-    time: "6:00 PM",
-    location: "Main Auditorium",
-    description: "Meet and network with successful alumni from top tech companies. Open to all students!",
-  },
-  {
-    title: "Resume Building Workshop",
-    date: "2025-07-15",
-    time: "4:00 PM",
-    location: "Room 204, Career Center",
-    description: "Get tips from industry experts on how to craft a winning resume.",
-  },
-  {
-    title: "Tech Talk: AI in 2025",
-    date: "2025-07-20",
-    time: "2:00 PM",
-    location: "Online (Zoom)",
-    description: "A panel discussion with AI professionals about the future of artificial intelligence.",
-  },
-];
 
 const StudentDashboard = () => {
 	const [showMessages, setShowMessages] = useState(false);
@@ -52,10 +27,10 @@ const StudentDashboard = () => {
 	const [alumniList, setAlumniList] = useState([]);
 	const [allSkills, setAllSkills] = useState([]);
 	const [stages, setStages] = useState({}); // Track stage for each alumni
-	const [connectionNotifications, setConnectionNotifications] = useState([]);
-	const [showNotifications, setShowNotifications] = useState(false);
+
 	const [myConnections, setMyConnections] = useState([]);
 	const [showConnections, setShowConnections] = useState(false);
+	const [visibleCount, setVisibleCount] = useState(6); // Show 6 alumni initially (2 rows x 3 cols)
 	const navigate = useNavigate();
 
 	// Only render after student data is loaded
@@ -113,35 +88,30 @@ const StudentDashboard = () => {
 			.catch(() => setAlumniList([]));
 	}, []);
 
-	// Sync stages with backend connection requests
-	useEffect(() => {
-  if (!student?._id) return;
-  fetch(`${API_BASE_URL}/connections/requested/${student._id}`)
-    .then(res => res.json())
-    .then(data => {
-      // data should be an array of { alumniId, status }
-      const newStages = {};
-      (data || []).forEach(req => {
-        newStages[req.alumniId] = req.status; // status: 'pending', 'accepted', etc.
-      });
-      setStages(newStages);
-    })
-    .catch(() => {});
-}, [student?._id]);
-
-	// Fetch connection notifications for student (with polling)
+	// Sync stages with backend connection requests (with polling)
 	useEffect(() => {
 		if (!student?._id) return;
-		const fetchNotifications = () => {
-			fetch(`${API_BASE_URL}/connections/notifications/student/${student._id}`)
+		
+		const fetchConnectionStatuses = () => {
+			fetch(`${API_BASE_URL}/connections/requested/${student._id}`)
 				.then(res => res.json())
-				.then(data => setConnectionNotifications(data || []))
-				.catch(() => setConnectionNotifications([]));
+				.then(data => {
+					// data should be an array of { alumniId, status }
+					const newStages = {};
+					(data || []).forEach(req => {
+						newStages[req.alumniId] = req.status; // status: 'pending', 'accepted', 'rejected'
+					});
+					setStages(newStages);
+				})
+				.catch(() => {});
 		};
-		fetchNotifications(); // initial fetch
-		const interval = setInterval(fetchNotifications, 5000); // poll every 5 seconds
+		
+		fetchConnectionStatuses(); // Initial fetch
+		const interval = setInterval(fetchConnectionStatuses, 5000); // Poll every 5 seconds
 		return () => clearInterval(interval);
 	}, [student?._id]);
+
+
 
 	// Fetch my accepted connections
 	const fetchMyConnections = () => {
@@ -152,12 +122,7 @@ const StudentDashboard = () => {
 			.catch(() => setMyConnections([]));
 	};
 
-	// Mark notifications as seen
-	const markNotificationsSeen = () => {
-		if (!student?._id) return;
-		fetch(`${API_BASE_URL}/connections/notifications/student/${student._id}/seen`, { method: "POST" })
-		.then(() => setConnectionNotifications((prev) => prev.map(n => ({ ...n, seen: true }))))		.catch(() => {});
-	};
+
 
 	// Filter alumni based on search and filters
 	const filteredAlumni = alumniList.filter((a) => {
@@ -180,6 +145,7 @@ const StudentDashboard = () => {
 				? skills.filter((s) => s !== skill)
 				: [...skills, skill]
 		);
+		setVisibleCount(6); // Reset to show first 6 when filter changes
 	};
 	const toggleCompany = (company) => {
 		setSelectedCompanies((cs) =>
@@ -187,7 +153,13 @@ const StudentDashboard = () => {
 				? cs.filter((c) => c !== company)
 				: [...cs, company]
 		);
+		setVisibleCount(6); // Reset to show first 6 when filter changes
 	};
+	
+	// Reset pagination when search changes
+	useEffect(() => {
+		setVisibleCount(6);
+	}, [search]);
 
 	// Send connection request to backend and update stage
 	// This function ensures the UI shows 'Pending' immediately after clicking Connect
@@ -246,7 +218,7 @@ const StudentDashboard = () => {
 						{student ? student.name : "Profile"}
 					</span>
 				</button>
-				{/* Right side: Posts Feed, Notification, Message icons */}
+				{/* Right side: Posts Feed, Message icons */}
 				<div className="flex-1 flex justify-end items-center gap-4">
 					<button
 						className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
@@ -257,19 +229,6 @@ const StudentDashboard = () => {
 							<path strokeLinecap="round" strokeLinejoin="round" d="M19 21H5a2 2 0 01-2-2V7a2 2 0 012-2h3l2-2h4l2 2h3a2 2 0 012 2v12a2 2 0 01-2 2z" />
 						</svg>
 						Posts Feed
-					</button>
-					<button
-						className="text-yellow-500 hover:text-yellow-600 text-3xl relative transition-colors duration-200"
-						aria-label="Notifications"
-						onClick={() => {
-							setShowNotifications(true);
-							markNotificationsSeen();
-						}}
-					>
-						<FaBell />
-						{connectionNotifications.some(n => !n.seen) && (
-							<span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
-						)}
 					</button>
 					<button
 						className="text-cyan-700 hover:text-cyan-900 text-4xl relative transition-colors duration-200"
@@ -311,24 +270,6 @@ const StudentDashboard = () => {
 					setShowConnections(true);
 				}}
 			/>
-			{/* Notification Modal */}
-			{showNotifications && (
-				<Modal onClose={() => setShowNotifications(false)} title="New Connections">
-					{connectionNotifications.length === 0 ? (
-						<div className="text-center text-gray-500">No new connections.</div>
-					) : (
-						<ul className="divide-y">
-							{connectionNotifications.map((n, idx) => (
-								<li key={n._id || idx} className="py-2 flex items-center gap-3">
-									<img src={n.alumniImg || '/default-avatar.png'} alt="alumni" className="w-8 h-8 rounded-full" />
-									<span className="font-semibold text-cyan-700">{n.alumniName}</span>
-									<span className="text-green-600">accepted your connection request!</span>
-								</li>
-							))}
-						</ul>
-					)}
-				</Modal>
-			)}
 			{/* My Connections Modal */}
 			{showConnections && (
 				<Modal onClose={() => setShowConnections(false)} title="My Connections">
@@ -415,7 +356,7 @@ const StudentDashboard = () => {
 								No alumni found.
 							</div>
 						) : (
-							filteredAlumni.map((alumni) => {
+							filteredAlumni.slice(0, visibleCount).map((alumni) => {
 								if (!alumni._id) return null; // skip if no id
 								return (
 									<AlumniCard
@@ -423,12 +364,23 @@ const StudentDashboard = () => {
 										alumni={alumni}
 										studentId={student?._id || ""}
 										connectionStatus={stages[alumni._id] || ""}
-										onRequestSent={(alumniId, status) => setStages(prev => ({ ...prev, [alumniId]: status }))}
+										onRequestSent={(alumniId) => handleStageChange(alumniId)}
 									/>
 								);
 							})
 						)}
 					</div>
+					{/* More Button */}
+					{filteredAlumni.length > visibleCount && (
+						<div className="w-full flex justify-center mt-8">
+							<button
+								className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
+								onClick={() => setVisibleCount(prev => prev + 6)}
+							>
+								More Alumni ({filteredAlumni.length - visibleCount} remaining)
+							</button>
+						</div>
+					)}
 				</main>
 			</div>
 			{/* Message Box Modal */}
@@ -458,30 +410,6 @@ const StudentDashboard = () => {
           </div>
         </div>
       )}
-			{/* Upcoming Events Section */}
-			<section className="w-full max-w-5xl mx-auto mt-12 mb-8">
-    <h2 className="text-2xl font-bold text-indigo-700 mb-6 text-center flex items-center justify-center gap-2">
-      <span className="inline-block w-2 h-8 bg-indigo-400 rounded-full"></span>
-      Upcoming Events
-      <span className="inline-block w-2 h-8 bg-indigo-400 rounded-full"></span>
-    </h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {upcomingEvents.map((event, idx) => (
-        <div key={idx} className="bg-white rounded-2xl shadow-lg border border-indigo-100 p-6 flex flex-col gap-2 hover:shadow-2xl transition">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-indigo-600 font-bold text-lg">{event.title}</span>
-          </div>
-          <div className="text-sm text-gray-500 mb-1">
-            <span className="font-semibold">Date:</span> {event.date} &nbsp;|&nbsp; <span className="font-semibold">Time:</span> {event.time}
-          </div>
-          <div className="text-sm text-gray-500 mb-1">
-            <span className="font-semibold">Location:</span> {event.location}
-          </div>
-          <div className="text-gray-700 text-sm mb-2">{event.description}</div>
-        </div>
-      ))}
-    </div>
-  </section>
 		</div>
 	);
 };

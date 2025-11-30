@@ -91,15 +91,21 @@ const AlumniDashboard = () => {
 
   // Fetch pending connection requests for this alumni
   useEffect(() => {
-    if (!profile?._id) return;
-    fetch(`${API_BASE_URL}/connections/received/${profile._id}`)
+    const alumniId = alumni?._id || profile?._id;
+    if (!alumniId) return;
+    console.log('Fetching requests for alumni ID:', alumniId);
+    fetch(`${API_BASE_URL}/connections/received/${alumniId}`)
       .then(res => res.json())
       .then(data => {
+        console.log('Connection requests received:', data);
         setPendingRequests(data || []);
         setHasUnseenRequests((data || []).some(r => !r.seenByAlumni));
       })
-      .catch(() => setPendingRequests([]));
-  }, [profile?._id]);
+      .catch(err => {
+        console.error('Error fetching connection requests:', err);
+        setPendingRequests([]);
+      });
+  }, [alumni?._id, profile?._id]);
 
   // Fetch all alumni IDs on mount
   useEffect(() => {
@@ -473,14 +479,21 @@ const AlumniDashboard = () => {
 
   // Accept/Reject request
   const handleRespond = (requestId, action) => {
+    console.log('Responding to request:', requestId, 'with action:', action);
     fetch(`${API_BASE_URL}/connections/respond`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId, action }),
     })
       .then(res => res.json())
-      .then(() => {
+      .then(data => {
+        console.log('Response from server:', data);
         setPendingRequests(prev => prev.filter(r => r._id !== requestId));
+        toast.success(action === 'accept' ? 'Connection accepted!' : 'Request rejected');
+      })
+      .catch(err => {
+        console.error('Error responding to request:', err);
+        toast.error('Failed to respond to request');
       });
   };
 
@@ -759,17 +772,54 @@ const AlumniDashboard = () => {
       {showRequests && (
         <Modal onClose={() => setShowRequests(false)} title="Pending Connection Requests">
           {pendingRequests.length === 0 ? (
-            <div className="text-center text-gray-500">No pending requests.</div>
+            <div className="text-center text-gray-500 py-4">No pending requests.</div>
           ) : (
-            <ul className="divide-y">
-              {pendingRequests.map((req, idx) => (
-                <li key={req._id || idx} className="py-2 flex items-center gap-3">
-                  <img src={req.studentImg || '/default-avatar.png'} alt="student" className="w-8 h-8 rounded-full" />
-                  <span className="font-semibold text-yellow-700">{req.studentName}</span>
-                  <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full ml-2" onClick={() => handleRespond(req._id, "accept")}>Accept</button>
-                  <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full ml-2" onClick={() => handleRespond(req._id, "reject")}>Reject</button>
-                </li>
-              ))}
+            <ul className="divide-y divide-gray-200">
+              {pendingRequests.map((req, idx) => {
+                const studentName = req.studentName || 'Unknown Student';
+                const studentImg = req.studentImg || '/default-avatar.png';
+                const initials = studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                
+                return (
+                  <li key={req._id || idx} className="py-4 flex items-center gap-4">
+                    {/* Student Profile Photo */}
+                    {studentImg && studentImg !== '/default-avatar.png' ? (
+                      <img 
+                        src={studentImg} 
+                        alt={studentName} 
+                        className="w-14 h-14 rounded-full object-cover border-2 border-yellow-300 shadow-md" 
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full border-2 border-yellow-300 bg-yellow-100 flex items-center justify-center text-yellow-700 font-bold text-xl shadow-md">
+                        {initials}
+                      </div>
+                    )}
+                    
+                    {/* Student Info */}
+                    <div className="flex-1">
+                      <div className="font-bold text-yellow-800 text-lg">{studentName}</div>
+                      {req.studentEmail && <div className="text-xs text-gray-500">{req.studentEmail}</div>}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button 
+                        className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-full font-bold shadow-md transition"
+                        onClick={() => handleRespond(req._id, "accept")}
+                      >
+                        ✓ Accept
+                      </button>
+                      <button 
+                        className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-full font-bold shadow-md transition"
+                        onClick={() => handleRespond(req._id, "reject")}
+                      >
+                        ✗ Reject
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Modal>
