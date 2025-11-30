@@ -122,13 +122,13 @@ const InfoBoxes = () => {
 					<div
 						key={idx}
 						ref={(el) => (boxRefs.current[idx] = el)}
-						className="flex flex-col items-center text-center bg-gradient-to-br from-blue-50 to-cyan-100 rounded-2xl shadow-xl p-8 border-t-4 border-b-4 border-cyan-200 hover:scale-105 hover:shadow-2xl transition-all duration-200"
+						className="flex flex-col items-center text-center bg-gradient-to-br from-blue-50 to-cyan-100 rounded-2xl shadow-xl p-8 border-t-4 border-b-4 border-cyan-200 hover:scale-105 hover:shadow-2xl hover:border-indigo-300 transition-all duration-300"
 					>
 						<div className="mb-4">{box.icon}</div>
-						<h3 className="text-xl font-bold mb-2 text-cyan-900">
+						<h3 className="text-xl font-extrabold mb-2 text-cyan-900">
 							{box.title}
 						</h3>
-						<p className="text-gray-600 text-base">{box.desc}</p>
+						<p className="text-gray-700 text-base leading-relaxed">{box.desc}</p>
 					</div>
 				))}
 			</div>

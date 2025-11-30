@@ -12,7 +12,7 @@ const TPOMyPosts = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch('`${API_BASE_URL}/tpo/posts', {
+        const res = await fetch(`${API_BASE_URL}/tpo/posts`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         if (res.ok) {

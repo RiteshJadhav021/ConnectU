@@ -9,7 +9,8 @@ import { useNavigate } from "react-router-dom";
 import Modal from "./Modal"; // (Assume a simple Modal component exists or will be created)
 import { API_BASE_URL } from "../config";
 
-const companies = ["Google", "Microsoft", "Amazon", "TCS", "Infosys","Wipro","Accenture","Cognizant","HCL","IBM"];
+// Companies will be derived dynamically from alumni data
+const defaultCompanies = [];
 
 // Sample upcoming events data
 const upcomingEvents = [
@@ -41,8 +42,8 @@ const StudentDashboard = () => {
 	const [search, setSearch] = useState("");
 	const [selectedSkills, setSelectedSkills] = useState([]);
 	const [selectedCompanies, setSelectedCompanies] = useState([]);
+	const [companies, setCompanies] = useState(defaultCompanies);
 	const [showProfile, setShowProfile] = useState(false);
-	const [showAlumniPosts, setShowAlumniPosts] = useState(false);
 	const [student, setStudent] = useState(() => {
 		// Try to get user from localStorage as fallback
 		const user = localStorage.getItem('user');
@@ -64,20 +65,16 @@ const StudentDashboard = () => {
 
 	// Fetch student data on mount
 	useEffect(() => {
-		console.log("About to fetch student data...");
 		const fetchStudent = async () => {
 			try {
 				const token = localStorage.getItem("token");
-				console.log("Token in localStorage:", token);
-				const res = await fetch("/api/student/me", {
+				const res = await fetch(`${API_BASE_URL}/student/me`, {
 					headers: {
 						Authorization: `Bearer ${token}`,
 					},
 				});
-				console.log("Student fetch status:", res.status);
 				if (res.ok) {
 					const data = await res.json();
-					console.log("Fetched student data:", data);
 					setStudent(data);
 					// Always update localStorage with full student object (including _id)
 					localStorage.setItem('user', JSON.stringify(data));
@@ -100,12 +97,18 @@ const StudentDashboard = () => {
 				setAlumniList(data);
 				// Collect all unique skills from alumni
 				const skillsSet = new Set();
+				const companySet = new Set();
 				data.forEach(alumni => {
 					if (Array.isArray(alumni.skills)) {
 						alumni.skills.forEach(skill => skillsSet.add(skill));
 					}
+					if (alumni.company && typeof alumni.company === 'string') {
+						const companyName = alumni.company.trim();
+						if (companyName.length > 0) companySet.add(companyName);
+					}
 				});
 				setAllSkills(Array.from(skillsSet));
+				setCompanies(Array.from(companySet));
 			})
 			.catch(() => setAlumniList([]));
 	}, []);
@@ -121,7 +124,6 @@ const StudentDashboard = () => {
       (data || []).forEach(req => {
         newStages[req.alumniId] = req.status; // status: 'pending', 'accepted', etc.
       });
-      console.log('Fetched from backend, newStages:', newStages);
       setStages(newStages);
     })
     .catch(() => {});
@@ -192,11 +194,7 @@ const StudentDashboard = () => {
 	const handleStageChange = async (alumniId) => {
   if (!student?._id) return;
   // Optimistically set the stage to 'pending' for instant feedback
-  setStages((prev) => {
-    const updated = { ...prev, [alumniId]: 'pending' };
-    console.log('Updated stages:', updated);
-    return updated;
-  });
+  setStages((prev) => ({ ...prev, [alumniId]: 'pending' }));
   try {
     const res = await fetch(`${API_BASE_URL}/connections/request`, {
       method: 'POST',
@@ -251,7 +249,7 @@ const StudentDashboard = () => {
 				{/* Right side: Posts Feed, Notification, Message icons */}
 				<div className="flex-1 flex justify-end items-center gap-4">
 					<button
-						className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow transition flex items-center gap-2"
+						className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
 						onClick={() => navigate('/alumni-posts')}
 						aria-label="Posts Feed"
 					>
@@ -261,7 +259,7 @@ const StudentDashboard = () => {
 						Posts Feed
 					</button>
 					<button
-						className="text-yellow-500 hover:text-yellow-600 text-3xl relative"
+						className="text-yellow-500 hover:text-yellow-600 text-3xl relative transition-colors duration-200"
 						aria-label="Notifications"
 						onClick={() => {
 							setShowNotifications(true);
@@ -274,7 +272,7 @@ const StudentDashboard = () => {
 						)}
 					</button>
 					<button
-						className="text-cyan-700 hover:text-cyan-900 text-4xl relative"
+						className="text-cyan-700 hover:text-cyan-900 text-4xl relative transition-colors duration-200"
 						aria-label="Messages"
 						onClick={() => setShowMessages(true)}
 					>
@@ -379,7 +377,9 @@ const StudentDashboard = () => {
 						Filter by Company
 					</h3>
 					<div className="flex flex-wrap gap-2">
-						{companies.map((company) => (
+						{companies.length === 0 ? (
+							<div className="text-sm text-gray-500">No companies found from alumni data.</div>
+						) : companies.map((company) => (
 							<button
 								key={company}
 								onClick={() => toggleCompany(company)}
@@ -393,13 +393,11 @@ const StudentDashboard = () => {
 							>
 								{company}
 							</button>
-						))}
+							))}
 					</div>
 				</aside>
 				{/* Center Content */}
 				<main className="flex-1 flex flex-col items-center">
-					{/* Show Alumni Posts Feed if toggled */}
-					{showAlumniPosts && <AlumniPostFeed />}
 					{/* Search Bar */}
 					<div className="w-full max-w-2xl mb-8">
 						<input

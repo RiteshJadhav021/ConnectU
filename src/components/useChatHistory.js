@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../config';
 
 // Custom React hook to fetch chat history between student and alumni
 export default function useChatHistory(studentId, alumniId, token) {
@@ -10,7 +11,7 @@ export default function useChatHistory(studentId, alumniId, token) {
     if (!studentId || !alumniId || !token) return;
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:5000/api/message/conversation/${studentId}/${alumniId}`,
+    fetch(`${API_BASE_URL}/message/conversation/${studentId}/${alumniId}`,
       {
         headers: { Authorization: `Bearer ${token}` }
       }

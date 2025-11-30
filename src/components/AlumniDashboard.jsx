@@ -22,6 +22,7 @@ const AlumniDashboard = () => {
   const [postImage, setPostImage] = useState(null);
   const [postImagePreview, setPostImagePreview] = useState("");
   const [posting, setPosting] = useState(false);
+  const [postsLoading, setPostsLoading] = useState(false);
   const [posts, setPosts] = useState([]);
   const [activeCommentPost, setActiveCommentPost] = useState(null);
   const [commentText, setCommentText] = useState("");
@@ -69,6 +70,7 @@ const AlumniDashboard = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        setPostsLoading(true);
         // Fetch all posts from TPO endpoint (returns all posts: Alumni + TPO)
         const res = await fetch(`${API_BASE_URL}/tpo/posts`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -80,6 +82,9 @@ const AlumniDashboard = () => {
           setPosts(sortedPosts);
         }
       } catch {}
+      finally {
+        setPostsLoading(false);
+      }
     };
     fetchPosts();
   }, []);
@@ -807,7 +812,7 @@ const AlumniDashboard = () => {
                       </div>
                       <button
                         className="ml-auto bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1 rounded-full text-xs font-semibold transition"
-                        onClick={() => navigate(`/alumni-chat/${conv.studentId}`)}
+                        onClick={() => navigate(`/chat/${conv.studentId}`)}
                       >
                         Open
                       </button>
@@ -825,6 +830,12 @@ const AlumniDashboard = () => {
         {/* <p className="text-lg">Welcome, {profile.name ? profile.name : "Alumni"}!</p> */}
         {/* Posts Feed */}
         <div className="w-full max-w-2xl mt-8 flex flex-col gap-8">
+          {postsLoading && (
+            <div className="text-center text-yellow-600 font-semibold">Loading posts...</div>
+          )}
+          {!postsLoading && posts.length === 0 && (
+            <div className="text-center text-gray-500 font-medium">No posts yet. Create one using the + Post button.</div>
+          )}
           {posts.map((post, idx) => (
             <div key={post._id || idx} className="bg-white rounded-2xl shadow p-6 border border-gray-100">
               <div className="flex items-center gap-2 mb-2">

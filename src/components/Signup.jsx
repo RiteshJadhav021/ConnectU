@@ -219,7 +219,7 @@ const Signup = () => {
       // Store form data for OTP verification
       const currentFormData = {
         role,
-        name: form.name.trim().toUpperCase(),
+        name: form.name.trim(),
         email: form.email,
         prn: form.prn,
         passout: form.passout,

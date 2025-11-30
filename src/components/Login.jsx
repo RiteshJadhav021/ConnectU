@@ -131,8 +131,6 @@ const Login = () => {
             }
           } catch (e) { /* ignore */ }
         }
-        // Debug: Log userProfile after all attempts
-        console.log('Final userProfile stored in localStorage:', userProfile);
         localStorage.setItem('user', JSON.stringify(userProfile));
         // Show toast before redirect
         toast.success('Login successful!');

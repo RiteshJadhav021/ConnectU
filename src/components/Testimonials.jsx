@@ -54,7 +54,7 @@ const Testimonials = () => {
           <div
             key={i}
             ref={el => (cardsRef.current[i] = el)}
-            className="testimonial-card bg-white/60 backdrop-blur-lg border border-white/40 shadow-2xl rounded-3xl px-8 py-8 max-w-xs flex flex-col items-center transition-transform duration-300 hover:-translate-y-2 hover:shadow-indigo-300/40 group opacity-0"
+            className="testimonial-card bg-white/70 backdrop-blur-lg border border-white/50 shadow-2xl rounded-3xl px-8 py-8 max-w-xs flex flex-col items-center transition-all duration-300 hover:-translate-y-3 hover:shadow-indigo-300/50 hover:scale-105 group opacity-0"
           >
             {/* Quote icon */}
             <svg className="w-8 h-8 text-cyan-400 mb-3 group-hover:text-indigo-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">

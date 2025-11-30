@@ -23,9 +23,11 @@ const TPODashboard = () => {
   const [postImagePreview, setPostImagePreview] = useState("");
   const [posting, setPosting] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState(null);
   const [commentText, setCommentText] = useState("");
   const [showMyPosts, setShowMyPosts] = useState(false);
+  const [postFilter, setPostFilter] = useState('all'); // 'all', 'alumni', 'tpo', 'mine'
   const [tpo, setTpo] = useState(() => {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
@@ -33,13 +35,27 @@ const TPODashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Reusable helper to refresh posts
+  const refreshPosts = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const sortedPosts = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setPosts(sortedPosts);
+      }
+    } catch {}
+  };
+
   // Fetch TPO profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const res = await fetch('`${API_BASE_URL}/tpo/me', {
+          const res = await fetch(`${API_BASE_URL}/tpo/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -62,17 +78,9 @@ const TPODashboard = () => {
   // Fetch posts on mount
   useEffect(() => {
     const fetchPosts = async () => {
-      try {
-        const res = await fetch('`${API_BASE_URL}/tpo/posts', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        if (res.ok) {
-          let data = await res.json();
-          // Sort posts by createdAt descending (newest first)
-          data = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setPosts(data);
-        }
-      } catch {}
+      setPostsLoading(true);
+      await refreshPosts();
+      setPostsLoading(false);
     };
     fetchPosts();
   }, []);
@@ -138,7 +146,7 @@ const TPODashboard = () => {
     // Send profile data to backend
     try {
       const token = localStorage.getItem('token');
-      await fetch('`${API_BASE_URL}/tpo/me', {
+      await fetch(`${API_BASE_URL}/tpo/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -216,7 +224,7 @@ const TPODashboard = () => {
     formData.append('content', postDescription);
     if (postImage) formData.append('image', postImage);
     try {
-      const res = await fetch('`${API_BASE_URL}/tpo/posts', {
+      const res = await fetch(`${API_BASE_URL}/tpo/posts`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -224,15 +232,7 @@ const TPODashboard = () => {
         body: formData,
       });
       if (res.ok) {
-        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        if (postsRes.ok) {
-          const data = await postsRes.json();
-          // Sort posts by createdAt descending
-          const sortedPosts = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setPosts(sortedPosts);
-        }
+        await refreshPosts();
         setShowPostModal(false);
         setPostDescription("");
         setPostImage(null);
@@ -317,16 +317,7 @@ const TPODashboard = () => {
         body: JSON.stringify({ userId: tpo._id })
       });
       if (res.ok) {
-        // Refetch posts to update UI
-        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        if (postsRes.ok) {
-          const data = await postsRes.json();
-          // Sort posts by createdAt descending
-          const sortedPosts = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setPosts(sortedPosts);
-        }
+        await refreshPosts();
       }
     } catch (err) {
       toast.error("Failed to like post");
@@ -350,16 +341,7 @@ const TPODashboard = () => {
         })
       });
       if (res.ok) {
-        // Refetch posts to update UI
-        const postsRes = await fetch('`${API_BASE_URL}/tpo/posts', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        if (postsRes.ok) {
-          const data = await postsRes.json();
-          // Sort posts by createdAt descending
-          const sortedPosts = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setPosts(sortedPosts);
-        }
+        await refreshPosts();
         setCommentText("");
       }
     } catch (err) {
@@ -550,10 +532,83 @@ const TPODashboard = () => {
         </div>
       )}
       {/* Posts Feed */}
+      {/* Simple Stats Bar - Clickable Filters */}
+      <div className="w-full px-4 pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        <button
+          onClick={() => setPostFilter('all')}
+          className={`rounded-xl p-3 shadow flex flex-col text-left transition-all duration-200 ${
+            postFilter === 'all'
+              ? 'bg-cyan-600 border-2 border-cyan-700 scale-105'
+              : 'bg-white/80 border border-cyan-200 hover:bg-cyan-50'
+          }`}
+        >
+          <span className={`text-xs font-semibold ${postFilter === 'all' ? 'text-cyan-100' : 'text-gray-500'}`}>Total Posts</span>
+          <span className={`text-xl font-bold ${postFilter === 'all' ? 'text-white' : 'text-cyan-700'}`}>{posts.length}</span>
+        </button>
+        <button
+          onClick={() => setPostFilter('mine')}
+          className={`rounded-xl p-3 shadow flex flex-col text-left transition-all duration-200 ${
+            postFilter === 'mine'
+              ? 'bg-indigo-600 border-2 border-indigo-700 scale-105'
+              : 'bg-white/80 border border-cyan-200 hover:bg-indigo-50'
+          }`}
+        >
+          <span className={`text-xs font-semibold ${postFilter === 'mine' ? 'text-indigo-100' : 'text-gray-500'}`}>My Posts</span>
+          <span className={`text-xl font-bold ${postFilter === 'mine' ? 'text-white' : 'text-cyan-700'}`}>{posts.filter(p => p.authorModel==='TPO' && isMyPost(p)).length}</span>
+        </button>
+        <button
+          onClick={() => setPostFilter('alumni')}
+          className={`rounded-xl p-3 shadow flex flex-col text-left transition-all duration-200 ${
+            postFilter === 'alumni'
+              ? 'bg-yellow-600 border-2 border-yellow-700 scale-105'
+              : 'bg-white/80 border border-cyan-200 hover:bg-yellow-50'
+          }`}
+        >
+          <span className={`text-xs font-semibold ${postFilter === 'alumni' ? 'text-yellow-100' : 'text-gray-500'}`}>Alumni Posts</span>
+          <span className={`text-xl font-bold ${postFilter === 'alumni' ? 'text-white' : 'text-cyan-700'}`}>{posts.filter(p => p.authorModel==='Alumni').length}</span>
+        </button>
+        <button
+          onClick={() => setPostFilter('tpo')}
+          className={`rounded-xl p-3 shadow flex flex-col text-left transition-all duration-200 ${
+            postFilter === 'tpo'
+              ? 'bg-blue-600 border-2 border-blue-700 scale-105'
+              : 'bg-white/80 border border-cyan-200 hover:bg-blue-50'
+          }`}
+        >
+          <span className={`text-xs font-semibold ${postFilter === 'tpo' ? 'text-blue-100' : 'text-gray-500'}`}>TPO Posts</span>
+          <span className={`text-xl font-bold ${postFilter === 'tpo' ? 'text-white' : 'text-cyan-700'}`}>{posts.filter(p => p.authorModel==='TPO').length}</span>
+        </button>
+      </div>
       <main className="flex-1 flex flex-col items-center justify-center w-full">
         <div className="w-full max-w-2xl mt-8 flex flex-col gap-8">
-          {(showMyPosts ? posts.filter(isMyPost) : posts).map((post, idx) => (
-            <div key={post._id || idx} className="bg-white rounded-2xl shadow p-6 border border-gray-100">
+          {postsLoading && (
+            <>
+              <div className="text-center text-cyan-600 font-semibold mb-4">Loading posts...</div>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl shadow p-6 border border-gray-100 animate-pulse">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                    <div className="h-3 bg-gray-200 rounded w-20 ml-auto"></div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              ))}
+            </>
+          )}
+          {!postsLoading && posts.length === 0 && (
+            <div className="text-center text-gray-500 font-medium">No posts yet. Create one using the + Post button.</div>
+          )}
+          {(() => {
+            let filtered = posts;
+            if (postFilter === 'mine') filtered = posts.filter(isMyPost);
+            else if (postFilter === 'alumni') filtered = posts.filter(p => p.authorModel === 'Alumni');
+            else if (postFilter === 'tpo') filtered = posts.filter(p => p.authorModel === 'TPO');
+            if (!postsLoading && filtered.length === 0 && posts.length > 0) {
+              return <div className="text-center text-gray-500 font-medium">No posts match this filter.</div>;
+            }
+            return filtered.map((post, idx) => (
+              <div key={post._id || idx} className="bg-white rounded-2xl shadow p-6 border border-gray-100">
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-semibold text-blue-700">
                   {post.authorModel === 'TPO' ? 'TPO' : post.authorModel === 'Alumni' ? 'Alumni' : 'Unknown'}: {post.author && post.author.name ? post.author.name : 'Unknown'}
@@ -594,7 +649,8 @@ const TPODashboard = () => {
                 </button>
               </div>
             </div>
-          ))}
+            ));
+          })()}
         </div>
       {/* My Posts: Add a close button when viewing only TPO's posts */}
       {showMyPosts && (

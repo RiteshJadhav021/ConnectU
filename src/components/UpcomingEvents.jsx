@@ -36,14 +36,14 @@ const icon = (
 
 const UpcomingEvents = () => (
 	<section className="py-16 bg-gradient-to-br from-cyan-50 to-white">
-		<h2 className="text-3xl sm:text-4xl font-bold text-center text-indigo-700 mb-12 drop-shadow-lg tracking-tight">
+		<h2 className="text-3xl sm:text-4xl font-extrabold text-center text-indigo-700 mb-12 drop-shadow-lg tracking-tight">
 			Upcoming Events
 		</h2>
 		<div className="flex flex-wrap justify-center gap-8">
 			{events.map((e, i) => (
 				<div
 					key={i}
-					className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-xs w-full border border-cyan-100 flex flex-col items-center transition-transform hover:-translate-y-2 hover:shadow-indigo-200 duration-300"
+					className="relative bg-white rounded-3xl shadow-2xl p-8 max-w-xs w-full border border-cyan-100 flex flex-col items-center transition-all duration-300 hover:-translate-y-3 hover:shadow-indigo-300/40 hover:scale-105"
 				>
 					<div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-br from-indigo-400 to-cyan-400 rounded-full p-3 shadow-lg">
 						{icon}

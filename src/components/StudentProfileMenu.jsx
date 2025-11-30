@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 
 const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded, onEmailUpdated }) => {
   const fileInputRef = useRef();
@@ -35,7 +36,7 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded, onEmailUp
       const formData = new FormData();
       formData.append("photo", file);
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/student/me/photo", {
+      const res = await fetch(`${API_BASE_URL}/student/me/photo`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -87,7 +88,7 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded, onEmailUp
         }
       }
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/student/me', {
+      const res = await fetch(`${API_BASE_URL}/student/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +133,7 @@ const StudentProfileMenu = ({ open, onClose, student, onPhotoUploaded, onEmailUp
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/student/me/password', {
+      const res = await fetch(`${API_BASE_URL}/student/me/password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
