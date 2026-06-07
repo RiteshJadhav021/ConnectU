@@ -1,6 +1,6 @@
 # ConnectU Frontend
 
-A modern, responsive React-based frontend for ConnectU - a platform that bridges the gap between current students and alumni for mentorship, networking, and professional guidance. Built with React, Vite, and Tailwind CSS for optimal performance and user experience.
+A modern, responsive React-based frontend for ConnectU - a platform which bridges the gap between current students and alumni for mentorship, networking, and professional guidance. Built with React, Vite, and Tailwind CSS for optimal performance and user experience.
 
 ## 📋 Table of Contents
 
@@ -26,8 +26,8 @@ A modern, responsive React-based frontend for ConnectU - a platform that bridges
 - **Multi-Role Authentication**: Secure login/signup for Students, Alumni, and TPO
 - **Interactive Dashboards**: Role-specific dashboards with tailored functionality
 - **Real-time Messaging**: Socket.io-powered chat system between students and alumni
-- **Connection Management**: Students can request connections with alumni
 - **Post Management**: Alumni and TPO can create, edit, and manage posts
+- **Connection Management**: Students can request connections with alumni
 - **Profile Management**: Complete profile customization with photo uploads
 - **Responsive Design**: Mobile-first design that works on all devices
 - **Animated UI**: Smooth GSAP animations for enhanced user experience
